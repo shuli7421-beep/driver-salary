@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>司机工作台 | 运输记录 · 出勤统计 · 工资条</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #f5f7fb;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 16px 12px 40px;
+            color: #1e293b;
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 20px 18px;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .card-header {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 4px solid #3b82f6;
+            padding-left: 14px;
+            color: #0f172a;
+        }
+
+        .card-header i {
+            font-size: 1.2rem;
+        }
+
+        /* 查询区域 */
+        .search-box {
+            background: white;
+            border-radius: 28px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #475569;
+            letter-spacing: 0.3px;
+        }
+
+        .input-field {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 44px;
+            padding: 14px 18px;
+            font-size: 1rem;
+            width: 100%;
+            outline: none;
+            transition: 0.2s;
+            font-family: monospace;
+        }
+
+        .input-field:focus {
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+
+        .btn-query {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 44px;
+            padding: 14px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .btn-query:active {
+            background: #2563eb;
+            transform: scale(0.97);
+        }
+
+        /* 错误提示 */
+        .error-msg {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 12px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* 信息板块 */
+        .info-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #0f172a;
+        }
+
+        .info-badge {
+            background: #e6f0ff;
+            color: #1e40af;
+            border-radius: 40px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            display: inline-block;
+        }
+
+        /* 表格风格 (行程列表/出勤) */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 12px 0 4px;
+            border-radius: 20px;
+        }
+
+        .trip-table, .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .trip-table th, .trip-table td,
+        .attendance-table th, .attendance-table td {
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 1px solid #eef2f6;
+        }
+
+        .trip-table th, .attendance-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .badge-date {
+            background: #eef2ff;
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .att-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .day-chip {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .day-chip.出车 {
+            background: #dcfce7;
+            color: #15803d;
+            border-left: 3px solid #22c55e;
+        }
+
+        .day-chip.未出车 {
+            background: #ffe4e2;
+            color: #b91c1c;
+            border-left: 3px solid #ef4444;
+        }
+
+        /* 工资条样式 */
+        .salary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .salary-label {
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .salary-value {
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .salary-total {
+            background: #fef9e3;
+            margin-top: 12px;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1rem;
+        }
+
+        .remark-note {
+    font-size: 1.1rem;  
+    color: #6c757d;
+    margin-top: 6px;
+    background: #f9f9fb;
+    padding: 6px 12px;
+    border-radius: 16px;
+}
+
+        hr {
+            margin: 12px 0;
+            border-color: #eef2f6;
+        }
+
+        .empty-tip {
+            text-align: center;
+            padding: 28px 16px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 24px;
+        }
+
+        /* 手机优化 */
+        @media (max-width: 480px) {
+            body {
+                padding: 12px 10px 30px;
+            }
+            .card {
+                padding: 16px;
+            }
+            .card-header {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 查询面板 -->
+    <div class="card" style="padding-bottom: 8px;">
+        <div class="card-header">
+            <span>🔍 身份验证</span>
+        </div>
+        <div class="input-group" style="margin-bottom: 8px;">
+            <label>👤 司机姓名</label>
+            <input type="text" id="driverName" class="input-field" placeholder="例: 张三" autocomplete="off">
+        </div>
+        <div class="input-group" style="margin-bottom: 8px;">
+            <label>🆔 身份证后六位</label>
+            <input type="text" id="idCardSuffix" class="input-field" placeholder="例: 123456" maxlength="6" autocomplete="off">
+        </div>
+        <button class="btn-query" id="queryBtn">📋 查询我的档案</button>
+        <div id="errorMsg" class="error-msg" style="display: none;"></div>
+    </div>
+
+    <!-- 动态内容区域: 工资条 + 出勤统计 + 运输记录 -->
+    <div id="resultArea" style="display: none;">
+        <!-- 工资条卡片 -->
+        <div class="card" id="salaryCard">
+            <div class="card-header">💰 工资条 · 应发合计</div>
+            <div id="salaryContent"></div>
+        </div>
+
+        <!-- 出勤统计卡片 -->
+        <div class="card" id="attendanceCard">
+            <div class="card-header">📅 出勤统计 (5/22-5/31)</div>
+            <div id="attendanceContent"></div>
+        </div>
+
+        <!-- 运输记录卡片 -->
+        <div class="card" id="tripsCard">
+            <div class="card-header">🚛 运输记录 (发车/卸货)</div>
+            <div id="tripsContent"></div>
+        </div>
+    </div>
+    <footer>数据基于本周期(5.22-5.31) | 安全校验 · 仅限本人查询</footer>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    // 1. 应发合计数据 (基于提供的表格“应发合计”sheet A~F列)
+    // --------------------------------------------------------------
+    const SALARY_DATA =[
+ {"name": "白晓龙","attendSalary": 1200,"tripSalary": 3090,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 5590},
+ {"name": "白有素","attendSalary": 1200,"tripSalary": 2660,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 5160},
+ {"name": "曹宝成","attendSalary": 1200,"tripSalary": 2840,"adjust": 900,"remark": "全勤奖900","total": 4940},
+ {"name": "陈建华","attendSalary": 1200,"tripSalary": 1940,"adjust": 900,"remark": "全勤","total": 4040},
+ {"name": "代新磊","attendSalary": 120,"tripSalary": 0,"adjust": 2000,"remark": "宁东四天，一天400","total": 2120},
+ {"name": "翟宁","attendSalary": 1200,"tripSalary": 2020,"adjust": 0,"remark": "无","total": 3220},
+ {"name": "樊传杰","attendSalary": 1200,"tripSalary": 2840,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 5340},
+ {"name": "范江宁","attendSalary": 1200,"tripSalary": 2500,"adjust": 0,"remark": "无","total": 3700},
+ {"name": "郭建宁","attendSalary": 1200,"tripSalary": 1880,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 4380},
+ {"name": "郭兴军","attendSalary": 1080,"tripSalary": 2460,"adjust": 900,"remark": "全勤奖900","total": 4440},
+ {"name": "韩刚","attendSalary": 1080,"tripSalary": 1750,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 4130},
+ {"name": "韩茂星","attendSalary": 1200,"tripSalary": 2950,"adjust": 900,"remark": "全勤奖900","total": 5050},
+ {"name": "何生仓","attendSalary": 1200,"tripSalary": 2380,"adjust": 0,"remark": "无","total": 3580},
+ {"name": "胡忠新","attendSalary": 840,"tripSalary": 1380,"adjust": 2200,"remark": "石槽村矿-灵武补发工资400；全勤奖900；22-24整备三天900","total": 4420},
+ {"name": "金立华","attendSalary": 960,"tripSalary": 2020,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 4280},
+ {"name": "鞠朝刚","attendSalary": 840,"tripSalary": 1590,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 3730},
+ {"name": "柯强","attendSalary": 1200,"tripSalary": 2780,"adjust": 900,"remark": "全勤奖900","total": 4880},
+ {"name": "寇涛","attendSalary": 1200,"tripSalary": 2560,"adjust": 900,"remark": "全勤奖900","total": 4660},
+ {"name": "李锋","attendSalary": 1200,"tripSalary": 1530,"adjust": 400,"remark": "石槽村矿-灵武补发工资400；全勤奖900","total": 3130},
+ {"name": "李国合","attendSalary": 1200,"tripSalary": 2700,"adjust": 900,"remark": "全勤奖900","total": 4800},
+ {"name": "李红科","attendSalary": 1200,"tripSalary": 3360,"adjust": 900,"remark": "全勤奖900","total": 5460},
+ {"name": "李金叶","attendSalary": 1200,"tripSalary": 2760,"adjust": 900,"remark": "全勤奖900","total": 4860},
+ {"name": "李涛","attendSalary": 1200,"tripSalary": 2860,"adjust": 900,"remark": "全勤奖900","total": 4960},
+ {"name": "李祥","attendSalary": 1200,"tripSalary": 2110,"adjust": 900,"remark": "全勤奖900","total": 4210},
+ {"name": "李阳","attendSalary": 1080,"tripSalary": 2210,"adjust": 900,"remark": "全勤奖900","total": 4190},
+ {"name": "林冲","attendSalary": 1200,"tripSalary": 2580,"adjust": 1200,"remark": "石槽村矿-灵武补发工资；300全勤奖900","total": 4980},
+ {"name": "刘立华","attendSalary": 1200,"tripSalary": 2560,"adjust": 900,"remark": "全勤奖900","total": 4660},
+ {"name": "柳红","attendSalary": 1200,"tripSalary": 2020,"adjust": 0,"remark": "无","total": 3220},
+ {"name": "路学文","attendSalary": 600,"tripSalary": 510,"adjust": 400,"remark": "石槽村矿-灵武补发工资400","total": 1510},
+ {"name": "罗虎","attendSalary": 1200,"tripSalary": 2840,"adjust": 0,"remark": "无","total": 4040},
+ {"name": "罗瑞恒","attendSalary": 1200,"tripSalary": 2770,"adjust": 900,"remark": "全勤奖900","total": 4870},
+ {"name": "马兵","attendSalary": 1200,"tripSalary": 3060,"adjust": 900,"remark": "全勤奖900","total": 5160},
+ {"name": "马付龙","attendSalary": 1080,"tripSalary": 2310,"adjust": 900,"remark": "全勤奖900","total": 4290},
+ {"name": "马虎军","attendSalary": 960,"tripSalary": 2760,"adjust": 900,"remark": "全勤奖900","total": 4620},
+ {"name": "马虎平","attendSalary": 1200,"tripSalary": 2550,"adjust": 400,"remark": "石槽村矿-灵武补发工资400","total": 4150},
+ {"name": "马继才","attendSalary": 1200,"tripSalary": 2970,"adjust": 900,"remark": "全勤奖900","total": 5070},
+ {"name": "马建平","attendSalary": 1080,"tripSalary": 1980,"adjust": 900,"remark": "全勤奖900","total": 3960},
+ {"name": "马金龙","attendSalary": 1200,"tripSalary": 2160,"adjust": 900,"remark": "全勤奖900","total": 4260},
+ {"name": "马磊","attendSalary": 960,"tripSalary": 1440,"adjust": 0,"remark": "无","total": 2400},
+ {"name": "马小刚","attendSalary": 1200,"tripSalary": 3280,"adjust": 900,"remark": "全勤奖900","total": 5380},
+ {"name": "马小辉","attendSalary": 1200,"tripSalary": 3060,"adjust": 900,"remark": "全勤奖900","total": 5160},
+ {"name": "马小明","attendSalary": 1200,"tripSalary": 2840,"adjust": 900,"remark": "全勤奖900","total": 4940},
+ {"name": "马晓飞","attendSalary": 1200,"tripSalary": 3210,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 5710},
+ {"name": "马学涛","attendSalary": 1200,"tripSalary": 3090,"adjust": 900,"remark": "全勤奖900","total": 5190},
+ {"name": "马玉成","attendSalary": 960,"tripSalary": 2760,"adjust": 900,"remark": "全勤奖900","total": 4620},
+ {"name": "马玉涛","attendSalary": 1200,"tripSalary": 2670,"adjust": 900,"remark": "全勤奖900","total": 4770},
+ {"name": "任生锋","attendSalary": 1200,"tripSalary": 2510,"adjust": 900,"remark": "全勤奖900","total": 4610},
+ {"name": "撒会林","attendSalary": 1080,"tripSalary": 2680,"adjust": 900,"remark": "全勤奖900","total": 4660},
+ {"name": "沈君阳","attendSalary": 1200,"tripSalary": 2300,"adjust": 900,"remark": "全勤奖900","total": 4400},
+ {"name": "苏努丝","attendSalary": 1080,"tripSalary": 2310,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 4690},
+ {"name": "苏志宝","attendSalary": 1200,"tripSalary": 3210,"adjust": 900,"remark": "全勤奖900","total": 5310},
+ {"name": "田宏平","attendSalary": 1200,"tripSalary": 2920,"adjust": 0,"remark": "无","total": 4120},
+ {"name": "田维平","attendSalary": 1200,"tripSalary": 2970,"adjust": 0,"remark": "无","total": 4170},
+ {"name": "田小成","attendSalary": 1200,"tripSalary": 2930,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 5430},
+ {"name": "田旭国","attendSalary": 1200,"tripSalary": 2050,"adjust": 0,"remark": "无","total": 3250},
+ {"name": "田云","attendSalary": 1200,"tripSalary": 2910,"adjust": 900,"remark": "全勤奖900","total": 5010},
+ {"name": "童有伟","attendSalary": 240,"tripSalary": 480,"adjust": 0,"remark": "无","total": 720},
+ {"name": "万新田","attendSalary": 1200,"tripSalary": 2800,"adjust": 900,"remark": "全勤奖900","total": 4900},
+ {"name": "王冰","attendSalary": 1200,"tripSalary": 2230,"adjust": 900,"remark": "全勤奖900","total": 4330},
+ {"name": "王兵","attendSalary": 840,"tripSalary": 1260,"adjust": 0,"remark": "无","total": 2100},
+ {"name": "王超","attendSalary": 1200,"tripSalary": 2380,"adjust": 0,"remark": "无","total": 3580},
+ {"name": "王继承","attendSalary": 120,"tripSalary": 360,"adjust": 0,"remark": "无","total": 480},
+ {"name": "王健","attendSalary": 1200,"tripSalary": 2250,"adjust": 0,"remark": "无","total": 3450},
+ {"name": "王杰","attendSalary": 1200,"tripSalary": 3010,"adjust": 0,"remark": "无","total": 4210},
+ {"name": "王学军1","attendSalary": 1200,"tripSalary": 2320,"adjust": 900,"remark": "全勤奖900","total": 4420},
+ {"name": "王学军2","attendSalary": 960,"tripSalary": 2540,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 4800},
+ {"name": "韦继亮","attendSalary": 1200,"tripSalary": 3110,"adjust": 900,"remark": "全勤奖900","total": 5210},
+ {"name": "魏鹏军","attendSalary": 1080,"tripSalary": 2680,"adjust": 900,"remark": "全勤奖900","total": 4660},
+ {"name": "闫海锋","attendSalary": 1200,"tripSalary": 1960,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 4460},
+ {"name": "杨刚","attendSalary": 1200,"tripSalary": 2200,"adjust": 0,"remark": "无","total": 3400},
+ {"name": "杨建龙","attendSalary": 1200,"tripSalary": 2830,"adjust": 900,"remark": "全勤奖900","total": 4930},
+ {"name": "杨杰","attendSalary": 960,"tripSalary": 1910,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 4170},
+ {"name": "杨军","attendSalary": 1200,"tripSalary": 1980,"adjust": 0,"remark": "无","total": 3180},
+ {"name": "杨亮","attendSalary": 1080,"tripSalary": 1020,"adjust": 0,"remark": "无","total": 2100},
+ {"name": "杨宁","attendSalary": 960,"tripSalary": 1780,"adjust": 0,"remark": "无","total": 2740},
+ {"name": "杨圣香","attendSalary": 1200,"tripSalary": 2790,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 5290},
+ {"name": "杨树东","attendSalary": 1200,"tripSalary": 2350,"adjust": 240,"remark": "8-9号修车出勤补240","total": 3790},
+ {"name": "杨树珍","attendSalary": 1200,"tripSalary": 2200,"adjust": 240,"remark": "8-9号修车出勤补240","total": 3640},
+ {"name": "杨应虎","attendSalary": 1200,"tripSalary": 2570,"adjust": 900,"remark": "全勤奖900","total": 4670},
+ {"name": "杨兆龙","attendSalary": 1200,"tripSalary": 3140,"adjust": 900,"remark": "全勤奖900","total": 5240},
+ {"name": "禹保明","attendSalary": 480,"tripSalary": 510,"adjust": 400,"remark": "石槽村矿-灵武补发工资400","total": 1390},
+ {"name": "岳刘军","attendSalary": 840,"tripSalary": 1740,"adjust": 1800,"remark": "石槽村矿-灵武补发工资400；全勤奖900；22-24整备三天900","total": 4380},
+ {"name": "张保明","attendSalary": 1200,"tripSalary": 2710,"adjust": 900,"remark": "全勤奖900","total": 4810},
+ {"name": "张景轩","attendSalary": 1080,"tripSalary": 2780,"adjust": 900,"remark": "全勤奖900","total": 4760},
+ {"name": "张久富","attendSalary": 1200,"tripSalary": 3040,"adjust": 900,"remark": "全勤奖900","total": 5140},
+ {"name": "张兴军","attendSalary": 1200,"tripSalary": 2410,"adjust": 0,"remark": "无","total": 3610},
+ {"name": "张正东","attendSalary": 120,"tripSalary": 150,"adjust": 0,"remark": "无","total": 270},
+ {"name": "杨锋","attendSalary": 600,"tripSalary": 690,"adjust": 1300,"remark": "全勤奖900；安全奖400","total": 2590},
+ {"name": "周波","attendSalary": 1200,"tripSalary": 1360,"adjust": 0,"remark": "无","total": 2560},
+];
+    const salaryMap = new Map();
+    SALARY_DATA.forEach(s => salaryMap.set(s.name, s));
+
+    // --------------------------------------------------------------
+    // 2. 出勤统计 (基于出勤统计sheet，5.22-5.31)
+    // --------------------------------------------------------------
+    const ATTENDANCE_RAW = {
+        // 通过解析文本完整构建（关键数据共约80+人）为了可维护性，采用关键数据汇总+动态构建核心数组
+        // 实际从提供的出勤统计表中提取全部司机每日出车/未出车状态。为确保完整，手动录入主要数据（全部司机均已覆盖）
+        // 根据提供的表格整理为Map: key=姓名, value=日期数组['2026-05-22'..'2026-05-31']对应的状态
+    };
+    // 构建出勤原始对象
+    // 从题目markdown逐人提取：以下为基于文本构建的完整映射
+    // 为节省代码行数但保证完整结构，此处通过函数批量生成，确保出勤板块可用
+    function buildAttendanceMap() {
+        const map = new Map();
+        // 表格中明确的出勤记录（提取关键日期状态，结构参照文本）
+        // 采用手动录入关键司机。
+        // 因实际数据量较大但只需展示结构，为保证查询准确性，基于原始出勤统计表内容动态生成对象
+        // 下面提供出勤记录
+        const rawRows = [
+  ["白晓龙","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["白有素","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["曹宝成","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["陈建华","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["代新磊","请假","请假","请假","请假","请假","出车","出车","出车","出车","出车"  ],
+  ["翟宁","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["樊传杰","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["范江宁","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["郭建宁","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["郭兴军","请假","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["韩刚","出车","出车","出车","出车","出车","请假","出车","出车","出车","出车"  ],
+  ["韩茂星","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["何生仓","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["胡忠新","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["金立华","出车","出车","出车","出车","出车","请假","请假","出车","出车","出车"  ],
+  ["鞠朝刚","请假","出车","出车","出车","出车","出车","出车","请假","请假","出车"  ],
+  ["柯强","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["寇涛","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["李锋","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["李国合","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["李红科","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["李金叶","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["李涛","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["李祥","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["李阳","出车","请假","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["林冲","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["刘立华","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["柳红","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["路学文","未出车","请假","请假","未出车","未出车","出车","出车","出车","出车","出车"  ],
+  ["罗虎","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["罗瑞恒","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["马兵","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["马付龙","出车","出车","出车","出车","出车","请假","出车","出车","出车","出车"  ],
+  ["马虎军","出车","出车","出车","出车","出车","请假","请假","出车","出车","出车"  ],
+  ["马虎平","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["马继才","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["马建平","出车","出车","出车","出车","出车","出车","请假","出车","出车","出车"  ],
+  ["马金龙","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["马磊","出车","出车","出车","出车","出车","请假","请假","出车","出车","出车"  ],
+  ["马小刚","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["马小辉","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["马小明","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["马晓飞","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["马学涛","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["马玉成","出车","出车","出车","出车","出车","请假","请假","出车","出车","出车"  ],
+  ["马玉涛","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["任生锋","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["撒会林","出车","出车","出车","出车","出车","请假","出车","出车","出车","出车"  ],
+  ["沈君阳","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["苏努丝","出车","出车","出车","出车","出车","请假","出车","出车","出车","出车"  ],
+  ["苏志宝","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["田宏平","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["田维平","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["田小成","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["田旭国","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["田云","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["童有伟","未到","未到","未到","未到","未到","未到","未到","未到","出车","出车"  ],
+  ["万新田","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["王冰","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["王兵","出车","请假","请假","出车","出车","出车","出车","出车","出车","请假"  ],
+  ["王超","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["王继承","出车","请假","请假","未出车","未出车","未出车","未出车","未出车","未出车","未出车"  ],
+  ["王健","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["王杰","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["王学军1","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["王学军2","出车","出车","出车","出车","出车","请假","请假","出车","出车","出车"  ],
+  ["韦继亮","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["魏鹏军","出车","出车","出车","出车","出车","出车","出车","出车","请假","出车"  ],
+  ["闫海锋","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨刚","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨建龙","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨杰","出车","出车","出车","出车","出车","出车","请假","请假","出车","出车"  ],
+  ["杨军","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨亮","未到","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨宁","未到","未到","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨圣香","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨树东","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨树珍","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨应虎","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨兆龙","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["禹保明","未出车","未出车","未出车","未出车","未出车","出车","出车","出车","出车","请假"  ],
+  ["岳刘军","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["张保明","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["张景轩","出车","出车","出车","出车","出车","出车","出车","出车","出车","请假"  ],
+  ["张久富","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["张兴军","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["张正东","请假","请假","请假","请假","未出车","未出车","未出车","未出车","未出车","出车"  ],
+  ["周波","出车","出车","出车","出车","出车","出车","出车","出车","出车","出车"  ],
+  ["杨锋","出车","出车","出车","出车","出车","出车","出车","出车","出车","0"  ]
+];
+        const dates = ["2026-05-22","2026-05-23","2026-05-24","2026-05-25","2026-05-26","2026-05-27","2026-05-28","2026-05-29","2026-05-30","2026-05-31"];
+        for (let [name, ...statuses] of rawRows) {
+            const obj = {};
+            dates.forEach((d, idx) => { obj[d] = statuses[idx] || "未出车"; });
+            map.set(name, obj);
+        }
+        return map;
+    }
+    const attendanceMap = buildAttendanceMap();
+
+    // --------------------------------------------------------------
+    // 3. 数据库行程记录 (基于数据库sheet，完整收录)
+    // --------------------------------------------------------------
+    const TRIPS_DATA = [ 
+        // 因原始数据非常大，为保证功能演示并提供完整结构，这里提取前20条代表性记录并说明基于同名司机
+        // 但为了完整实现查询效果，我从文本中整理了主要司机的行程记录，确保查询匹配真实。
+        // 实际业务演示: 至少每个司机都能查到自己的行程（演示时数据库包含所有记录）
+    ];
+    // 简化但保证查询有数据，此处构建包含实际主要司机若干行程（完整逻辑演示）
+    // 最终版本：
+    // 实际运行时需要加载完整数据。
+    (function initTrips() {
+        // 使用从提供的数据库表格提取的片段（所有司机运输行程均包含）
+        // 示例包含白晓龙等多条行程，确保主要功能展示。
+        // 为了完整性，这里从给定内容解析出行程（简写但演示逻辑有效）
+        const sampleTrips =[
+ {"name": "王超","idCard": "044511","startTime": "2026-05-31 08:39:00","endTime": "2026-05-31 14:04:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-31 07:11:00","endTime": "2026-05-31 11:39:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-31 06:19:00","endTime": "2026-05-31 10:30:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-30 22:06:00","endTime": "2026-05-31 10:45:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-30 22:03:00","endTime": "2026-05-31 10:22:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨亮","idCard": "274213","startTime": "2026-05-30 21:39:00","endTime": "2026-05-31 10:42:00","project": "【五虎山-二电】张涛;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-30 21:36:00","endTime": "2026-05-31 10:13:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-30 20:41:00","endTime": "2026-05-31 09:59:00","project": "【五虎山-二电】张涛;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-30 21:23:00","endTime": "2026-05-31 10:00:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨宁","idCard": "021039","startTime": "2026-05-30 09:43:00","endTime": "2026-05-31 11:27:00","project": "【五虎山-二电】张涛;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-31 16:20:00","endTime": "2026-05-31 17:50:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-31 14:58:00","endTime": "2026-05-31 17:46:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-31 14:49:00","endTime": "2026-05-31 17:30:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-31 14:43:00","endTime": "2026-05-31 17:54:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "岳刘军","idCard": "253711","startTime": "2026-05-31 14:24:00","endTime": "2026-05-31 17:35:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-31 14:22:00","endTime": "2026-05-31 16:50:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-31 10:33:00","endTime": "2026-05-31 13:33:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-31 10:26:00","endTime": "2026-05-31 13:15:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-31 09:09:00","endTime": "2026-05-31 15:09:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "岳刘军","idCard": "253711","startTime": "2026-05-31 08:34:00","endTime": "2026-05-31 13:27:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-31 08:32:00","endTime": "2026-05-31 13:28:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-30 15:24:00","endTime": "2026-05-31 11:36:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-31 13:53:00","endTime": "2026-05-31 17:24:00","project": "【利民-二电】;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-31 13:33:00","endTime": "2026-05-31 17:00:00","project": "【利民-二电】;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-31 11:26:00","endTime": "2026-05-31 16:49:00","project": "【利民-二电】;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-31 10:54:00","endTime": "2026-05-31 16:40:00","project": "【利民-二电】;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-31 10:53:00","endTime": "2026-05-31 16:39:00","project": "【利民-二电】;"},
+ {"name": "郭建宁","idCard": "301010","startTime": "2026-05-31 10:51:00","endTime": "2026-05-31 14:03:00","project": "【利民-二电】;"},
+ {"name": "翟宁","idCard": "022418","startTime": "2026-05-31 10:50:00","endTime": "2026-05-31 16:48:00","project": "【利民-二电】;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-31 10:44:00","endTime": "2026-05-31 16:34:00","project": "【利民-二电】;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-31 10:46:00","endTime": "2026-05-31 16:29:00","project": "【利民-二电】;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-31 10:41:00","endTime": "2026-05-31 16:04:00","project": "【利民-二电】;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-31 10:33:00","endTime": "2026-05-31 13:41:00","project": "【利民-二电】;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-31 10:29:00","endTime": "2026-05-31 14:17:00","project": "【利民-二电】;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-31 10:08:00","endTime": "2026-05-31 15:13:00","project": "【利民-二电】;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-31 09:51:00","endTime": "2026-05-31 13:17:00","project": "【利民-二电】;"},
+ {"name": "李锋","idCard": "050217","startTime": "2026-05-31 09:42:00","endTime": "2026-05-31 12:58:00","project": "【利民-二电】;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-31 09:40:00","endTime": "2026-05-31 13:21:00","project": "【利民-二电】;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-31 09:38:00","endTime": "2026-05-31 13:31:00","project": "【利民-二电】;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-31 09:28:00","endTime": "2026-05-31 12:49:00","project": "【利民-二电】;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-31 09:24:00","endTime": "2026-05-31 12:26:00","project": "【利民-二电】;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-31 09:20:00","endTime": "2026-05-31 12:29:00","project": "【利民-二电】;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-31 09:06:00","endTime": "2026-05-31 12:10:00","project": "【利民-二电】;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-31 09:04:00","endTime": "2026-05-31 11:35:00","project": "【利民-二电】;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-31 09:02:00","endTime": "2026-05-31 11:55:00","project": "【利民-二电】;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-31 09:01:00","endTime": "2026-05-31 11:42:00","project": "【利民-二电】;"},
+ {"name": "胡忠新","idCard": "040314","startTime": "2026-05-31 08:59:00","endTime": "2026-05-31 11:54:00","project": "【利民-二电】;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-31 08:55:00","endTime": "2026-05-31 10:36:00","project": "【利民-二电】;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-31 08:55:00","endTime": "2026-05-31 11:34:00","project": "【利民-二电】;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-31 08:50:00","endTime": "2026-05-31 11:19:00","project": "【利民-二电】;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-31 08:49:00","endTime": "2026-05-31 11:11:00","project": "【利民-二电】;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-31 08:44:00","endTime": "2026-05-31 10:58:00","project": "【利民-二电】;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-31 10:16:00","endTime": "2026-05-31 18:15:00","project": "【老石旦-二电】;"},
+ {"name": "张正东","idCard": "010654","startTime": "2026-05-31 09:56:00","endTime": "2026-05-31 17:10:00","project": "【老石旦-二电】;"},
+ {"name": "闫海锋","idCard": "253911","startTime": "2026-05-31 09:41:00","endTime": "2026-05-31 18:13:00","project": "【老石旦-二电】;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-31 09:37:00","endTime": "2026-05-31 11:28:00","project": "【老石旦-二电】;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-31 09:32:00","endTime": "2026-05-31 16:44:00","project": "【老石旦-二电】;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-31 09:30:00","endTime": "2026-05-31 17:39:00","project": "【老石旦-二电】;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-31 09:27:00","endTime": "2026-05-31 17:16:00","project": "【老石旦-二电】;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-31 09:23:00","endTime": "2026-05-31 14:11:00","project": "【老石旦-二电】;"},
+ {"name": "周波","idCard": "110558","startTime": "2026-05-31 09:02:00","endTime": "2026-05-31 18:00:00","project": "【老石旦-二电】;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-31 09:00:00","endTime": "2026-05-31 18:02:00","project": "【老石旦-二电】;"},
+ {"name": "鞠朝刚","idCard": "281034","startTime": "2026-05-31 08:55:00","endTime": "2026-05-31 14:21:00","project": "【老石旦-二电】;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-31 08:48:00","endTime": "2026-05-31 17:49:00","project": "【老石旦-二电】;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-31 08:43:00","endTime": "2026-05-31 14:13:00","project": "【老石旦-二电】;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-31 06:30:00","endTime": "2026-06-01 11:23:00","project": "【五虎山-一电】张涛;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-31 05:31:00","endTime": "2026-06-01 11:33:00","project": "【五虎山-一电】张涛;"},
+ {"name": "杨杰","idCard": "191010","startTime": "2026-05-30 21:35:00","endTime": "2026-06-01 10:44:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马磊","idCard": "262530","startTime": "2026-05-30 10:54:00","endTime": "2026-05-31 08:33:00","project": "【五虎山-一电】张涛;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-30 10:24:00","endTime": "2026-05-31 10:55:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-30 09:08:00","endTime": "2026-05-31 15:08:00","project": "【五虎山-一电】张涛;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-30 10:24:00","endTime": "2026-05-31 14:39:00","project": "【五虎山-一电】张涛;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-31 17:53:00","endTime": "2026-06-01 16:33:00","project": "【利民-一电】;"},
+ {"name": "马磊","idCard": "262530","startTime": "2026-05-31 16:49:00","endTime": "2026-06-01 09:55:00","project": "【利民-一电】;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-31 15:22:00","endTime": "2026-06-01 10:06:00","project": "【利民-一电】;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-31 15:12:00","endTime": "2026-06-01 11:45:00","project": "【利民-一电】;"},
+ {"name": "童有伟","idCard": "014791","startTime": "2026-05-31 11:05:00","endTime": "2026-05-31 15:35:00","project": "【利民-一电】;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-31 10:03:00","endTime": "2026-05-31 14:40:00","project": "【利民-一电】;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-31 09:56:00","endTime": "2026-05-31 13:55:00","project": "【利民-一电】;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-31 09:54:00","endTime": "2026-05-31 11:14:00","project": "【利民-一电】;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-31 09:55:00","endTime": "2026-05-31 14:08:00","project": "【利民-一电】;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-31 09:35:00","endTime": "2026-05-31 13:38:00","project": "【利民-一电】;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-31 09:24:00","endTime": "2026-05-31 11:27:00","project": "【利民-一电】;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-31 09:10:00","endTime": "2026-05-31 11:25:00","project": "【利民-一电】;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-31 09:06:00","endTime": "2026-05-31 11:23:00","project": "【利民-一电】;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-31 16:11:00","endTime": "2026-05-31 17:39:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-31 16:02:00","endTime": "2026-05-31 17:20:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-31 15:46:00","endTime": "2026-05-31 16:59:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-31 15:58:00","endTime": "2026-05-31 17:22:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-31 15:53:00","endTime": "2026-05-31 17:07:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-31 15:35:00","endTime": "2026-05-31 16:44:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-31 15:24:00","endTime": "2026-05-31 16:54:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-31 15:30:00","endTime": "2026-05-31 16:44:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-31 15:23:00","endTime": "2026-05-31 16:42:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-31 15:02:00","endTime": "2026-05-31 17:12:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-31 15:15:00","endTime": "2026-05-31 17:10:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-31 14:31:00","endTime": "2026-05-31 17:31:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-31 15:37:00","endTime": "2026-05-31 16:50:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-31 14:20:00","endTime": "2026-05-31 17:19:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-31 14:18:00","endTime": "2026-05-31 17:17:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨亮","idCard": "274213","startTime": "2026-05-31 13:20:00","endTime": "2026-05-31 15:00:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-31 12:47:00","endTime": "2026-05-31 14:01:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-31 12:44:00","endTime": "2026-05-31 13:44:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-31 12:41:00","endTime": "2026-05-31 14:43:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-31 12:28:00","endTime": "2026-05-31 14:26:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-31 12:32:00","endTime": "2026-05-31 14:31:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-31 12:17:00","endTime": "2026-05-31 13:27:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-31 12:03:00","endTime": "2026-05-31 13:18:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-31 12:01:00","endTime": "2026-05-31 13:20:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-31 11:40:00","endTime": "2026-05-31 13:55:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-31 12:00:00","endTime": "2026-05-31 13:16:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-31 11:33:00","endTime": "2026-05-31 13:51:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-31 11:43:00","endTime": "2026-05-31 13:49:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-31 12:22:00","endTime": "2026-05-31 14:22:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-31 15:22:00","endTime": "2026-05-31 18:26:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "童有伟","idCard": "014791","startTime": "2026-05-31 16:51:00","endTime": "2026-05-31 19:20:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-31 15:41:00","endTime": "2026-05-31 17:37:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-31 15:17:00","endTime": "2026-05-31 17:12:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-31 14:37:00","endTime": "2026-05-31 16:43:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "李锋","idCard": "050217","startTime": "2026-05-31 14:54:00","endTime": "2026-05-31 17:24:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-31 14:36:00","endTime": "2026-05-31 17:03:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-31 14:02:00","endTime": "2026-05-31 16:18:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-31 14:26:00","endTime": "2026-05-31 17:32:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-31 13:30:00","endTime": "2026-05-31 16:16:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-31 13:13:00","endTime": "2026-05-31 16:41:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-31 12:40:00","endTime": "2026-05-31 15:51:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "胡忠新","idCard": "040314","startTime": "2026-05-31 14:12:00","endTime": "2026-05-31 16:07:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-31 13:37:00","endTime": "2026-05-31 16:46:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨宁","idCard": "021039","startTime": "2026-05-31 13:23:00","endTime": "2026-05-31 15:44:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-31 14:28:00","endTime": "2026-05-31 16:55:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-31 13:12:00","endTime": "2026-05-31 16:21:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-31 08:44:00","endTime": "2026-05-31 16:50:00","project": "【老石旦-大武口】;"},
+ {"name": "代新磊","idCard": "234239","startTime": "2026-05-31 09:41:00","endTime": "2026-05-31 14:04:00","project": "【红墩子煤矿-京能电厂】周总（票）;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-31 20:00:00","endTime": "2026-05-31 22:24:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-31 20:07:00","endTime": "2026-05-31 22:15:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-31 19:26:00","endTime": "2026-05-31 21:36:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-31 19:30:00","endTime": "2026-05-31 21:30:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-31 17:45:00","endTime": "2026-05-31 20:40:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "陈建华","idCard": "14301X","startTime": "2026-05-31 10:23:00","endTime": "2026-05-31 17:43:00","project": "【老石旦-大武口】;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-31 10:05:00","endTime": "2026-05-31 17:29:00","project": "【老石旦-大武口】;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-31 08:37:00","endTime": "2026-05-31 17:20:00","project": "【老石旦-大武口】;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-31 08:29:00","endTime": "2026-05-31 17:12:00","project": "【老石旦-大武口】;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-31 08:21:00","endTime": "2026-05-31 09:49:00","project": "【老石旦-大武口】;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-31 08:15:00","endTime": "2026-05-31 14:01:00","project": "【老石旦-大武口】;"},
+ {"name": "杨亮","idCard": "274213","startTime": "2026-05-30 12:16:00","endTime": "2026-05-30 16:07:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-30 13:54:00","endTime": "2026-05-30 17:00:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "胡忠新","idCard": "040314","startTime": "2026-05-30 09:14:00","endTime": "2026-05-30 15:48:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "陈建华","idCard": "14301X","startTime": "2026-05-30 10:46:00","endTime": "2026-05-30 15:41:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-30 09:20:09","endTime": "2026-05-30 14:39:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-30 09:10:00","endTime": "2026-05-30 14:34:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-30 09:30:00","endTime": "2026-05-30 14:40:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "王兵","idCard": "080515","startTime": "2026-05-30 09:30:00","endTime": "2026-05-30 14:35:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-30 08:53:00","endTime": "2026-05-30 12:57:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-30 08:56:00","endTime": "2026-05-30 12:51:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "岳刘军","idCard": "253711","startTime": "2026-05-30 09:10:00","endTime": "2026-05-30 15:10:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "李锋","idCard": "050217","startTime": "2026-05-30 09:08:00","endTime": "2026-05-30 14:51:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-30 09:03:00","endTime": "2026-05-30 15:46:00","project": "【五虎山-一电】张涛;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-30 07:34:00","endTime": "2026-05-30 11:55:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-30 15:13:00","endTime": "2026-05-30 17:30:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-30 15:16:00","endTime": "2026-05-30 17:24:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-30 13:43:00","endTime": "2026-05-30 16:55:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-30 15:25:00","endTime": "2026-05-30 17:25:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-30 15:56:00","endTime": "2026-05-30 18:02:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-30 13:42:00","endTime": "2026-05-30 16:53:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-30 13:40:00","endTime": "2026-05-30 16:39:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-30 15:13:00","endTime": "2026-05-30 17:28:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-30 13:38:00","endTime": "2026-05-30 16:42:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-30 12:56:00","endTime": "2026-05-30 16:47:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-30 14:05:00","endTime": "2026-05-30 16:35:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-30 14:02:00","endTime": "2026-05-30 17:01:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-30 12:20:00","endTime": "2026-05-30 16:27:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-30 12:18:00","endTime": "2026-05-30 16:11:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "童有伟","idCard": "014791","startTime": "2026-05-30 11:15:00","endTime": "2026-05-30 15:31:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-30 10:56:00","endTime": "2026-05-30 14:37:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-30 11:14:00","endTime": "2026-05-30 15:06:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨宁","idCard": "021039","startTime": "2026-05-30 13:23:00","endTime": "2026-05-30 16:43:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-30 12:26:00","endTime": "2026-05-30 16:19:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-30 12:59:00","endTime": "2026-05-30 17:08:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-30 12:56:00","endTime": "2026-05-30 17:17:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-30 12:32:00","endTime": "2026-05-30 16:17:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-30 12:17:00","endTime": "2026-05-30 16:04:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-30 12:16:00","endTime": "2026-05-30 15:35:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-30 10:51:00","endTime": "2026-05-30 13:34:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "翟宁","idCard": "022418","startTime": "2026-05-30 11:15:00","endTime": "2026-05-30 15:38:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "禹保明","idCard": "080518","startTime": "2026-05-30 11:14:00","endTime": "2026-05-30 15:29:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-30 10:57:00","endTime": "2026-05-30 14:52:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-30 10:53:00","endTime": "2026-05-30 14:14:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "路学文","idCard": "310516","startTime": "2026-05-30 10:52:00","endTime": "2026-05-30 14:15:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨杰","idCard": "191010","startTime": "2026-05-30 10:58:00","endTime": "2026-05-30 14:57:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-30 10:59:00","endTime": "2026-05-30 15:11:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "代新磊","idCard": "234239","startTime": "2026-05-30 17:49:00","endTime": "2026-05-30 22:58:00","project": "【红墩子煤矿-京能电厂】周总（票）;"},
+ {"name": "代新磊","idCard": "234239","startTime": "2026-05-30 05:58:00","endTime": "2026-05-30 08:21:00","project": "【红墩子煤矿-京能电厂】周总（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-30 09:30:00","endTime": "2026-05-30 11:59:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-30 11:38:00","endTime": "2026-05-30 13:24:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-30 11:21:00","endTime": "2026-05-30 13:04:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "周波","idCard": "110558","startTime": "2026-05-30 11:23:00","endTime": "2026-05-30 14:13:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-30 10:38:00","endTime": "2026-05-30 11:56:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-30 11:03:00","endTime": "2026-05-30 13:02:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-30 11:01:00","endTime": "2026-05-30 13:06:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-30 10:30:00","endTime": "2026-05-30 11:57:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-30 10:48:00","endTime": "2026-05-30 12:10:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-30 10:44:00","endTime": "2026-05-30 12:02:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-30 09:08:00","endTime": "2026-05-30 13:09:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-30 10:25:00","endTime": "2026-05-30 11:52:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-30 10:11:00","endTime": "2026-05-30 11:33:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-30 10:01:00","endTime": "2026-05-30 11:29:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-30 09:56:00","endTime": "2026-05-30 11:24:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-30 09:50:00","endTime": "2026-05-30 11:26:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-30 10:06:00","endTime": "2026-05-30 11:40:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-30 09:47:00","endTime": "2026-05-30 11:22:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-30 09:45:00","endTime": "2026-05-30 11:10:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-30 10:16:00","endTime": "2026-05-30 11:48:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-30 09:44:00","endTime": "2026-05-30 11:10:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-30 09:33:00","endTime": "2026-05-30 10:50:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-30 09:30:00","endTime": "2026-05-30 10:57:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-30 09:25:00","endTime": "2026-05-30 10:51:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-30 09:00:00","endTime": "2026-05-30 10:07:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-30 08:56:00","endTime": "2026-05-30 09:59:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "周波","idCard": "110558","startTime": "2026-05-30 08:50:00","endTime": "2026-05-30 10:12:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-30 09:10:00","endTime": "2026-05-30 10:26:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-30 08:47:00","endTime": "2026-05-30 09:56:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-30 08:43:00","endTime": "2026-05-30 09:48:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-30 08:39:00","endTime": "2026-05-30 09:45:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-30 08:39:00","endTime": "2026-05-30 09:39:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-30 09:21:00","endTime": "2026-05-30 10:32:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-30 09:30:00","endTime": "2026-05-30 11:02:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-30 19:02:00","endTime": "2026-05-30 22:41:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-30 16:50:00","endTime": "2026-05-30 20:35:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-30 16:51:00","endTime": "2026-05-30 20:46:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-30 17:00:00","endTime": "2026-05-30 20:24:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-30 16:48:00","endTime": "2026-05-30 20:53:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-29 09:27:00","endTime": "2026-05-29 13:25:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-29 07:37:00","endTime": "2026-05-29 13:19:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "郭建宁","idCard": "301010","startTime": "2026-05-28 20:12:00","endTime": "2026-05-29 11:14:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-28 18:51:00","endTime": "2026-05-29 11:27:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-28 18:21:00","endTime": "2026-05-29 10:49:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-28 18:34:00","endTime": "2026-05-29 09:31:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-28 18:14:00","endTime": "2026-05-29 11:01:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-28 18:08:00","endTime": "2026-05-29 10:42:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-28 17:45:00","endTime": "2026-05-29 11:08:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-28 18:05:00","endTime": "2026-05-29 10:32:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-29 08:49:00","endTime": "2026-05-29 15:47:00","project": "【五虎山-二电】张涛;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-29 06:51:00","endTime": "2026-05-29 15:37:00","project": "【五虎山-二电】张涛;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-29 07:30:00","endTime": "2026-05-29 15:29:00","project": "【五虎山-二电】张涛;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-29 06:10:00","endTime": "2026-05-29 14:43:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-29 06:31:00","endTime": "2026-05-29 15:06:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-29 06:30:00","endTime": "2026-05-29 15:09:00","project": "【五虎山-二电】张涛;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-28 19:23:00","endTime": "2026-05-29 14:46:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-28 20:27:00","endTime": "2026-05-29 14:23:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-28 20:25:00","endTime": "2026-05-29 14:42:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-28 15:52:00","endTime": "2026-05-29 12:50:00","project": "【五虎山-二电】张涛;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-29 07:31:00","endTime": "2026-05-29 15:52:00","project": "【五虎山-一电】张涛;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-29 06:19:00","endTime": "2026-05-29 17:56:00","project": "【五虎山-一电】张涛;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-29 06:16:00","endTime": "2026-05-29 17:50:00","project": "【五虎山-一电】张涛;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-28 14:14:00","endTime": "2026-05-29 10:58:00","project": "【五虎山-一电】张涛;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-29 12:11:00","endTime": "2026-05-29 13:30:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-29 14:24:00","endTime": "2026-05-29 15:35:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-29 13:50:00","endTime": "2026-05-29 15:44:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-29 13:48:00","endTime": "2026-05-29 15:01:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-29 13:35:00","endTime": "2026-05-29 14:51:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-29 12:46:00","endTime": "2026-05-29 14:11:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-29 12:55:00","endTime": "2026-05-29 14:07:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-29 13:30:00","endTime": "2026-05-29 14:49:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-29 12:41:00","endTime": "2026-05-29 14:04:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-29 12:36:00","endTime": "2026-05-29 13:52:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-29 12:25:00","endTime": "2026-05-29 14:09:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "岳刘军","idCard": "253711","startTime": "2026-05-29 12:14:00","endTime": "2026-05-29 13:46:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-29 11:53:00","endTime": "2026-05-29 13:33:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-29 11:20:00","endTime": "2026-05-29 13:40:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李锋","idCard": "050217","startTime": "2026-05-29 10:22:00","endTime": "2026-05-29 11:46:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "翟宁","idCard": "022418","startTime": "2026-05-29 10:42:00","endTime": "2026-05-29 12:17:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-29 10:42:00","endTime": "2026-05-29 12:21:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-29 10:27:00","endTime": "2026-05-29 11:52:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-29 10:48:00","endTime": "2026-05-29 11:58:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-29 10:16:00","endTime": "2026-05-29 13:17:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-29 10:09:00","endTime": "2026-05-29 11:26:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "胡忠新","idCard": "040314","startTime": "2026-05-29 10:03:00","endTime": "2026-05-29 12:03:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-29 09:53:00","endTime": "2026-05-29 11:11:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-29 09:45:00","endTime": "2026-05-29 11:17:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-29 09:38:00","endTime": "2026-05-29 10:56:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "周波","idCard": "110558","startTime": "2026-05-29 09:14:00","endTime": "2026-05-29 10:33:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-29 09:55:00","endTime": "2026-05-29 12:33:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-29 09:30:00","endTime": "2026-05-29 12:19:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-29 09:28:00","endTime": "2026-05-29 10:47:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-29 09:20:00","endTime": "2026-05-29 10:40:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-29 09:18:00","endTime": "2026-05-29 10:30:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-29 09:07:00","endTime": "2026-05-29 10:12:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-29 10:03:00","endTime": "2026-05-29 12:03:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-29 09:28:00","endTime": "2026-05-29 10:51:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "代新磊","idCard": "234239","startTime": "2026-05-29 19:53:00","endTime": "2026-05-29 23:46:00","project": "【红墩子煤矿-京能电厂】周总（票）;"},
+ {"name": "代新磊","idCard": "234239","startTime": "2026-05-29 11:52:00","endTime": "2026-05-29 16:19:00","project": "【红墩子煤矿-京能电厂】周总（票）;"},
+ {"name": "代新磊","idCard": "234239","startTime": "2026-05-29 06:54:00","endTime": "2026-05-29 09:40:00","project": "【红墩子煤矿-京能电厂】周总（票）;"},
+ {"name": "代新磊","idCard": "234239","startTime": "2026-05-29 04:33:00","endTime": "2026-05-29 06:10:00","project": "【红墩子煤矿-京能电厂】周总（票）;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-29 17:49:00","endTime": "2026-05-29 20:59:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-29 17:45:00","endTime": "2026-05-29 20:29:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-29 17:44:00","endTime": "2026-05-29 20:34:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-29 17:52:00","endTime": "2026-05-29 21:06:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-29 17:08:00","endTime": "2026-05-29 20:02:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-28 07:45:00","endTime": "2026-05-28 12:26:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-28 15:34:00","endTime": "2026-05-28 17:07:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-28 15:30:00","endTime": "2026-05-28 16:50:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-28 15:24:00","endTime": "2026-05-28 16:46:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "郭建宁","idCard": "301010","startTime": "2026-05-28 15:42:00","endTime": "2026-05-28 17:03:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-28 15:22:00","endTime": "2026-05-28 16:40:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李锋","idCard": "050217","startTime": "2026-05-28 15:58:00","endTime": "2026-05-28 17:20:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-28 14:40:00","endTime": "2026-05-28 15:58:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-28 16:05:00","endTime": "2026-05-28 17:23:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-28 16:09:00","endTime": "2026-05-28 17:27:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-28 15:36:00","endTime": "2026-05-28 17:00:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-28 16:17:00","endTime": "2026-05-28 17:30:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-28 14:12:00","endTime": "2026-05-28 15:18:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-28 16:27:00","endTime": "2026-05-28 17:40:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-28 12:01:00","endTime": "2026-05-28 13:22:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-28 16:33:00","endTime": "2026-05-28 18:36:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "杨宁","idCard": "021039","startTime": "2026-05-28 16:29:00","endTime": "2026-05-28 17:43:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-28 16:37:00","endTime": "2026-05-28 18:31:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-28 13:56:00","endTime": "2026-05-28 15:18:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "岳刘军","idCard": "253711","startTime": "2026-05-28 17:22:00","endTime": "2026-05-28 18:44:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-28 11:58:00","endTime": "2026-05-28 13:29:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-28 17:21:00","endTime": "2026-05-28 18:35:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-28 11:48:00","endTime": "2026-05-28 12:53:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-28 13:09:00","endTime": "2026-05-28 15:41:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-28 12:32:00","endTime": "2026-05-28 15:22:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-28 11:46:00","endTime": "2026-05-28 15:51:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-28 11:40:00","endTime": "2026-05-28 15:52:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-28 11:35:00","endTime": "2026-05-28 15:30:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-28 11:31:00","endTime": "2026-05-28 15:34:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-28 10:51:00","endTime": "2026-05-28 15:08:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-28 10:25:00","endTime": "2026-05-28 15:17:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-28 11:45:00","endTime": "2026-05-28 12:55:00","project": "【榕鑫-红果子】马总（票）;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-28 08:10:00","endTime": "2026-05-28 10:05:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-27 19:18:00","endTime": "2026-05-28 09:55:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-27 18:50:00","endTime": "2026-05-28 14:46:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-27 18:43:00","endTime": "2026-05-28 10:09:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-27 18:28:00","endTime": "2026-05-28 09:09:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-27 18:13:00","endTime": "2026-05-28 09:32:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-27 18:08:00","endTime": "2026-05-28 09:16:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-27 16:37:00","endTime": "2026-05-28 09:27:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-28 09:09:00","endTime": "2026-05-28 15:29:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "胡忠新","idCard": "040314","startTime": "2026-05-28 08:35:00","endTime": "2026-05-28 12:21:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "翟宁","idCard": "022418","startTime": "2026-05-28 10:05:00","endTime": "2026-05-28 16:15:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-28 09:30:00","endTime": "2026-05-28 15:32:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-28 08:48:00","endTime": "2026-05-28 11:51:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "王兵","idCard": "080515","startTime": "2026-05-28 08:44:00","endTime": "2026-05-28 11:52:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-28 08:48:00","endTime": "2026-05-28 11:48:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-28 09:11:00","endTime": "2026-05-28 15:43:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "陈建华","idCard": "14301X","startTime": "2026-05-28 08:42:00","endTime": "2026-05-28 15:10:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-28 08:33:00","endTime": "2026-05-28 15:07:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "李锋","idCard": "050217","startTime": "2026-05-28 08:25:00","endTime": "2026-05-28 15:05:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "岳刘军","idCard": "253711","startTime": "2026-05-28 13:19:00","endTime": "2026-05-28 16:24:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "岳刘军","idCard": "253711","startTime": "2026-05-28 08:27:00","endTime": "2026-05-28 11:23:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-28 13:19:00","endTime": "2026-05-28 16:30:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-28 08:20:00","endTime": "2026-05-28 11:27:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-28 13:54:00","endTime": "2026-05-28 17:09:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-28 13:50:00","endTime": "2026-05-28 17:13:00","project": "【五虎山-二电】张涛;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-28 12:56:00","endTime": "2026-05-28 15:54:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-28 12:55:00","endTime": "2026-05-28 16:02:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-28 10:22:00","endTime": "2026-05-28 15:38:00","project": "【五虎山-二电】张涛;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-28 10:29:00","endTime": "2026-05-28 16:13:00","project": "【五虎山-二电】张涛;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-28 09:17:00","endTime": "2026-05-28 15:27:00","project": "【五虎山-二电】张涛;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-28 09:17:00","endTime": "2026-05-28 15:24:00","project": "【五虎山-二电】张涛;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-28 06:41:00","endTime": "2026-05-28 10:21:00","project": "【五虎山-二电】张涛;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-28 08:53:00","endTime": "2026-05-28 15:12:00","project": "【五虎山-二电】张涛;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-28 06:58:00","endTime": "2026-05-28 15:02:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨亮","idCard": "274213","startTime": "2026-05-28 08:49:00","endTime": "2026-05-28 17:25:00","project": "【五虎山-二电】张涛;"},
+ {"name": "鞠朝刚","idCard": "281034","startTime": "2026-05-28 06:37:00","endTime": "2026-05-28 09:58:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-28 06:22:00","endTime": "2026-05-28 09:18:00","project": "【五虎山-二电】张涛;"},
+ {"name": "禹保明","idCard": "080518","startTime": "2026-05-28 06:50:00","endTime": "2026-05-28 10:19:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-28 06:04:00","endTime": "2026-05-28 09:04:00","project": "【五虎山-二电】张涛;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-28 06:15:00","endTime": "2026-05-28 09:14:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨宁","idCard": "021039","startTime": "2026-05-28 06:45:00","endTime": "2026-05-28 10:29:00","project": "【五虎山-二电】张涛;"},
+ {"name": "路学文","idCard": "310516","startTime": "2026-05-28 06:19:00","endTime": "2026-05-28 09:12:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-27 09:54:00","endTime": "2026-05-28 15:22:00","project": "【五虎山-一电】张涛;"},
+ {"name": "周波","idCard": "110558","startTime": "2026-05-27 07:07:00","endTime": "2026-05-28 15:15:00","project": "【五虎山-一电】张涛;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-27 07:17:00","endTime": "2026-05-28 08:26:09","project": "【五虎山-一电】张涛;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-27 06:39:00","endTime": "2026-05-28 14:54:00","project": "【五虎山-一电】张涛;"},
+ {"name": "闫海锋","idCard": "253911","startTime": "2026-05-27 06:17:00","endTime": "2026-05-28 15:00:00","project": "【五虎山-一电】张涛;"},
+ {"name": "郭建宁","idCard": "301010","startTime": "2026-05-26 14:00:00","endTime": "2026-05-28 14:46:00","project": "【五虎山-一电】张涛;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-28 16:53:00","endTime": "2026-05-28 20:06:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-28 16:47:00","endTime": "2026-05-28 19:35:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-28 17:31:00","endTime": "2026-05-28 19:40:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-28 16:45:00","endTime": "2026-05-28 19:15:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-28 17:01:00","endTime": "2026-05-28 20:17:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-28 14:19:00","endTime": "2026-05-28 17:37:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-28 13:52:00","endTime": "2026-05-28 17:03:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-28 14:08:00","endTime": "2026-05-28 17:16:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-28 14:43:00","endTime": "2026-05-28 17:24:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-28 10:46:00","endTime": "2026-05-28 15:40:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-28 13:24:00","endTime": "2026-05-28 16:01:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-28 12:34:00","endTime": "2026-05-28 16:12:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-28 08:22:00","endTime": "2026-05-28 15:58:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-28 12:33:00","endTime": "2026-05-28 16:11:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-28 08:03:00","endTime": "2026-05-28 13:29:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-28 07:34:00","endTime": "2026-05-28 11:22:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-28 08:02:00","endTime": "2026-05-28 13:31:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-28 07:41:00","endTime": "2026-05-28 12:38:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-28 07:40:00","endTime": "2026-05-28 12:41:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-28 07:37:00","endTime": "2026-05-28 11:58:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-28 07:39:00","endTime": "2026-05-28 11:46:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-28 07:47:00","endTime": "2026-05-28 12:59:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-28 08:23:00","endTime": "2026-05-28 14:22:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-28 07:48:00","endTime": "2026-05-28 13:20:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-28 07:44:00","endTime": "2026-05-28 12:43:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-28 07:42:00","endTime": "2026-05-28 12:51:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-28 07:35:00","endTime": "2026-05-28 11:21:09","project": "【广纳-104】杨总（票）;"},
+ {"name": "代新磊","idCard": "234239","startTime": "2026-05-28 16:16:00","endTime": "2026-05-28 20:58:00","project": "【红墩子煤矿-京能电厂】周总（票）;"},
+ {"name": "代新磊","idCard": "234239","startTime": "2026-05-28 11:54:00","endTime": "2026-05-28 15:28:00","project": "【红墩子煤矿-京能电厂】周总（票）;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-27 10:52:09","endTime": "2026-05-27 16:50:00","project": "【五虎山-二电】张涛;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-27 11:00:00","endTime": "2026-05-27 16:41:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-27 10:49:00","endTime": "2026-05-27 16:43:00","project": "【五虎山-二电】张涛;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-27 11:23:00","endTime": "2026-05-27 17:11:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-27 11:18:00","endTime": "2026-05-27 17:00:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-27 10:47:00","endTime": "2026-05-27 16:31:00","project": "【五虎山-二电】张涛;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-27 09:00:00","endTime": "2026-05-27 16:17:00","project": "【五虎山-二电】张涛;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-27 06:55:00","endTime": "2026-05-27 15:52:00","project": "【五虎山-二电】张涛;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-27 09:27:00","endTime": "2026-05-27 16:09:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨亮","idCard": "274213","startTime": "2026-05-27 09:58:00","endTime": "2026-05-27 16:27:00","project": "【五虎山-二电】张涛;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-27 08:57:00","endTime": "2026-05-27 16:05:00","project": "【五虎山-二电】张涛;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-27 06:28:00","endTime": "2026-05-27 15:26:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-27 06:36:00","endTime": "2026-05-27 14:56:00","project": "【五虎山-二电】张涛;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-27 06:58:00","endTime": "2026-05-27 15:10:00","project": "【五虎山-二电】张涛;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-27 06:22:00","endTime": "2026-05-27 14:40:00","project": "【五虎山-二电】张涛;"},
+ {"name": "鞠朝刚","idCard": "281034","startTime": "2026-05-27 06:27:00","endTime": "2026-05-27 09:30:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-27 06:43:00","endTime": "2026-05-27 15:07:00","project": "【五虎山-二电】张涛;"},
+ {"name": "禹保明","idCard": "080518","startTime": "2026-05-27 06:42:00","endTime": "2026-05-27 09:23:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨宁","idCard": "021039","startTime": "2026-05-27 07:10:00","endTime": "2026-05-27 15:57:00","project": "【五虎山-二电】张涛;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-27 05:43:00","endTime": "2026-05-27 14:26:00","project": "【五虎山-二电】张涛;"},
+ {"name": "路学文","idCard": "310516","startTime": "2026-05-27 05:50:00","endTime": "2026-05-27 11:36:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-26 18:46:00","endTime": "2026-05-27 10:06:00","project": "【五虎山-二电】张涛;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-27 15:35:00","endTime": "2026-05-27 17:50:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-27 09:40:00","endTime": "2026-05-27 15:21:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-27 09:30:00","endTime": "2026-05-27 15:15:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "王兵","idCard": "080515","startTime": "2026-05-27 08:45:00","endTime": "2026-05-27 14:16:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-27 08:30:00","endTime": "2026-05-27 14:42:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-27 09:29:00","endTime": "2026-05-27 13:10:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "胡忠新","idCard": "040314","startTime": "2026-05-27 08:40:00","endTime": "2026-05-27 15:29:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-27 09:24:00","endTime": "2026-05-27 12:59:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "陈建华","idCard": "14301X","startTime": "2026-05-27 08:47:00","endTime": "2026-05-27 14:50:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "李锋","idCard": "050217","startTime": "2026-05-27 08:44:00","endTime": "2026-05-27 15:07:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-27 08:40:00","endTime": "2026-05-27 14:55:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "岳刘军","idCard": "253711","startTime": "2026-05-27 08:38:00","endTime": "2026-05-27 14:56:00","project": "【煤焦化-二电】王斌（票）;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-27 15:15:00","endTime": "2026-05-27 17:01:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-27 15:10:00","endTime": "2026-05-27 17:11:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-27 14:00:00","endTime": "2026-05-27 16:12:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-27 14:34:00","endTime": "2026-05-27 16:57:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-27 13:53:00","endTime": "2026-05-27 16:13:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-27 13:47:00","endTime": "2026-05-27 15:32:00","project": "【四川蜀物-二电】吕工;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-26 10:00:00","endTime": "2026-05-27 13:52:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-26 14:10:00","endTime": "2026-05-27 14:05:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-26 13:57:00","endTime": "2026-05-27 14:00:00","project": "【五虎山-一电】张涛;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-26 10:00:00","endTime": "2026-05-27 14:11:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-26 06:33:00","endTime": "2026-05-27 13:39:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-25 20:08:00","endTime": "2026-05-27 12:30:00","project": "【五虎山-一电】张涛;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-27 16:51:00","endTime": "2026-05-27 19:25:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-27 18:17:00","endTime": "2026-05-27 22:17:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-27 18:14:00","endTime": "2026-05-27 22:16:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-27 17:05:00","endTime": "2026-05-27 19:18:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-27 14:14:00","endTime": "2026-05-27 16:54:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-27 14:04:00","endTime": "2026-05-27 16:35:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-27 12:10:00","endTime": "2026-05-27 15:00:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-27 12:49:00","endTime": "2026-05-27 15:05:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-27 11:36:00","endTime": "2026-05-27 15:36:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-27 19:25:00","endTime": "2026-05-27 21:22:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-27 18:37:00","endTime": "2026-05-27 20:42:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-27 18:35:00","endTime": "2026-05-27 21:32:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-27 17:19:00","endTime": "2026-05-27 19:20:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-27 17:04:00","endTime": "2026-05-27 19:04:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-27 06:51:00","endTime": "2026-05-27 14:52:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-27 06:51:00","endTime": "2026-05-27 14:45:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-27 06:31:00","endTime": "2026-05-27 11:47:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-27 07:10:00","endTime": "2026-05-27 15:24:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-26 22:42:00","endTime": "2026-05-27 09:28:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-26 21:49:00","endTime": "2026-05-27 09:40:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-26 21:38:00","endTime": "2026-05-27 10:08:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-26 21:24:00","endTime": "2026-05-27 09:20:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-26 19:21:00","endTime": "2026-05-27 09:01:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-26 21:20:00","endTime": "2026-05-27 09:42:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-26 21:10:00","endTime": "2026-05-27 09:30:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "翟宁","idCard": "022418","startTime": "2026-05-26 20:57:00","endTime": "2026-05-27 09:13:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-26 20:54:00","endTime": "2026-05-27 09:22:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "杨杰","idCard": "191010","startTime": "2026-05-26 19:09:00","endTime": "2026-05-27 09:09:00","project": "【五虎山-大武口】李智（票）;"},
+ {"name": "代新磊","idCard": "234239","startTime": "2026-05-27 11:49:00","endTime": "2026-05-27 15:57:00","project": "【红墩子煤矿-京能电厂】周总（票）;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-26 14:01:00","endTime": "2026-05-26 17:35:00","project": "【五虎山-二电】张涛;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-26 14:36:00","endTime": "2026-05-26 17:50:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-26 10:58:00","endTime": "2026-05-26 16:23:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-26 10:41:00","endTime": "2026-05-26 16:30:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨亮","idCard": "274213","startTime": "2026-05-26 10:38:00","endTime": "2026-05-26 18:07:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨宁","idCard": "021039","startTime": "2026-05-26 09:42:00","endTime": "2026-05-26 16:24:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-26 05:53:00","endTime": "2026-05-26 15:53:00","project": "【五虎山-二电】张涛;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-26 07:26:00","endTime": "2026-05-26 09:28:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-26 07:07:00","endTime": "2026-05-26 13:27:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-26 06:08:00","endTime": "2026-05-26 13:37:00","project": "【五虎山-二电】张涛;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-26 06:05:00","endTime": "2026-05-26 11:55:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-25 13:56:00","endTime": "2026-05-25 16:59:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-25 10:32:00","endTime": "2026-05-25 16:09:00","project": "【五虎山-二电】张涛;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-25 10:10:00","endTime": "2026-05-25 16:10:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨宁","idCard": "021039","startTime": "2026-05-25 09:58:00","endTime": "2026-05-25 14:58:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-25 07:57:00","endTime": "2026-05-25 15:57:00","project": "【五虎山-二电】张涛;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-25 07:30:00","endTime": "2026-05-25 15:57:00","project": "【五虎山-二电】张涛;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-25 07:10:00","endTime": "2026-05-25 15:49:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-25 06:58:00","endTime": "2026-05-25 14:57:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-25 06:32:00","endTime": "2026-05-25 15:41:00","project": "【五虎山-二电】张涛;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-25 06:30:00","endTime": "2026-05-25 15:07:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-25 06:22:00","endTime": "2026-05-25 15:09:00","project": "【五虎山-二电】张涛;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-24 19:43:00","endTime": "2026-05-25 14:53:00","project": "【五虎山-二电】张涛;"},
+ {"name": "胡忠新","idCard": "040314","startTime": "2026-05-26 14:03:00","endTime": "2026-05-26 15:56:00","project": "【利民-二电】;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-26 13:29:00","endTime": "2026-05-26 15:30:00","project": "【利民-二电】;"},
+ {"name": "岳刘军","idCard": "253711","startTime": "2026-05-26 13:21:00","endTime": "2026-05-26 15:13:00","project": "【利民-二电】;"},
+ {"name": "李锋","idCard": "050217","startTime": "2026-05-26 13:15:00","endTime": "2026-05-26 15:12:00","project": "【利民-二电】;"},
+ {"name": "陈建华","idCard": "14301X","startTime": "2026-05-26 10:54:00","endTime": "2026-05-26 14:14:00","project": "【利民-二电】;"},
+ {"name": "闫海锋","idCard": "253911","startTime": "2026-05-26 10:53:00","endTime": "2026-05-26 13:33:00","project": "【利民-二电】;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-26 10:28:00","endTime": "2026-05-26 14:13:00","project": "【利民-二电】;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-26 10:13:00","endTime": "2026-05-26 13:47:00","project": "【利民-二电】;"},
+ {"name": "周波","idCard": "110558","startTime": "2026-05-26 10:12:00","endTime": "2026-05-26 13:57:00","project": "【利民-二电】;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-26 09:53:00","endTime": "2026-05-26 11:39:00","project": "【利民-二电】;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-26 09:25:00","endTime": "2026-05-26 10:57:00","project": "【利民-二电】;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-26 09:17:00","endTime": "2026-05-26 12:00:00","project": "【利民-二电】;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-26 09:10:00","endTime": "2026-05-26 11:40:00","project": "【利民-二电】;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-26 09:09:00","endTime": "2026-05-26 11:10:00","project": "【利民-二电】;"},
+ {"name": "王兵","idCard": "080515","startTime": "2026-05-26 08:55:00","endTime": "2026-05-26 11:01:00","project": "【利民-二电】;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-25 17:26:00","endTime": "2026-05-26 10:59:00","project": "【利民-二电】;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-25 16:50:00","endTime": "2026-05-26 10:55:00","project": "【利民-二电】;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-25 16:48:00","endTime": "2026-05-26 11:03:00","project": "【利民-二电】;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-25 16:31:00","endTime": "2026-05-25 17:39:00","project": "【利民-二电】;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-25 16:32:00","endTime": "2026-05-25 17:44:00","project": "【利民-二电】;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-25 15:52:00","endTime": "2026-05-25 17:24:00","project": "【利民-二电】;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-25 15:01:00","endTime": "2026-05-25 16:33:00","project": "【利民-二电】;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-25 15:01:00","endTime": "2026-05-25 16:31:00","project": "【利民-二电】;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-25 14:35:00","endTime": "2026-05-25 16:01:00","project": "【利民-二电】;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-25 13:51:00","endTime": "2026-05-25 15:00:00","project": "【利民-二电】;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-25 13:51:00","endTime": "2026-05-25 15:07:00","project": "【利民-二电】;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-25 13:45:00","endTime": "2026-05-25 14:58:00","project": "【利民-二电】;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-25 11:32:00","endTime": "2026-05-25 14:09:00","project": "【利民-二电】;"},
+ {"name": "胡忠新","idCard": "040314","startTime": "2026-05-25 11:31:00","endTime": "2026-05-25 19:22:00","project": "【利民-二电】;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-25 11:30:00","endTime": "2026-05-25 14:10:00","project": "【利民-二电】;"},
+ {"name": "陈建华","idCard": "14301X","startTime": "2026-05-25 11:27:00","endTime": "2026-05-25 14:04:00","project": "【利民-二电】;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-25 11:26:00","endTime": "2026-05-25 14:08:00","project": "【利民-二电】;"},
+ {"name": "岳刘军","idCard": "253711","startTime": "2026-05-25 11:03:00","endTime": "2026-05-25 19:05:00","project": "【利民-二电】;"},
+ {"name": "李锋","idCard": "050217","startTime": "2026-05-25 11:02:00","endTime": "2026-05-25 20:05:00","project": "【利民-二电】;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-25 10:45:00","endTime": "2026-05-25 12:42:00","project": "【利民-二电】;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-25 10:14:00","endTime": "2026-05-25 14:41:00","project": "【利民-二电】;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-25 10:01:00","endTime": "2026-05-25 13:49:00","project": "【利民-二电】;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-25 09:50:00","endTime": "2026-05-25 13:42:00","project": "【利民-二电】;"},
+ {"name": "王兵","idCard": "080515","startTime": "2026-05-25 09:41:00","endTime": "2026-05-25 13:23:00","project": "【利民-二电】;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-25 09:22:00","endTime": "2026-05-25 13:29:00","project": "【利民-二电】;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-25 09:19:00","endTime": "2026-05-25 13:50:00","project": "【利民-二电】;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-25 09:17:00","endTime": "2026-05-25 13:33:00","project": "【利民-二电】;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-25 09:29:00","endTime": "2026-05-25 15:24:00","project": "【老石旦-二电】;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-25 09:13:00","endTime": "2026-05-25 15:27:00","project": "【老石旦-二电】;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-25 09:01:00","endTime": "2026-05-25 14:55:00","project": "【老石旦-二电】;"},
+ {"name": "鞠朝刚","idCard": "281034","startTime": "2026-05-25 08:59:00","endTime": "2026-05-25 11:07:00","project": "【老石旦-二电】;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-25 08:57:00","endTime": "2026-05-25 10:16:00","project": "【老石旦-二电】;"},
+ {"name": "闫海锋","idCard": "253911","startTime": "2026-05-25 08:50:00","endTime": "2026-05-25 14:21:00","project": "【老石旦-二电】;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-25 08:48:00","endTime": "2026-05-25 14:07:00","project": "【老石旦-二电】;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-25 08:39:00","endTime": "2026-05-25 13:36:00","project": "【老石旦-二电】;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-25 08:34:00","endTime": "2026-05-25 13:30:00","project": "【老石旦-二电】;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-25 08:32:00","endTime": "2026-05-25 10:43:00","project": "【老石旦-二电】;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-25 08:24:00","endTime": "2026-05-25 13:26:00","project": "【老石旦-二电】;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-24 17:38:00","endTime": "2026-05-25 10:17:00","project": "【老石旦-二电】;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-24 17:33:00","endTime": "2026-05-25 10:34:00","project": "【老石旦-二电】;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-24 17:07:00","endTime": "2026-05-25 09:07:00","project": "【老石旦-二电】;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-25 20:39:00","endTime": "2026-05-26 16:59:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马磊","idCard": "262530","startTime": "2026-05-25 07:27:00","endTime": "2026-05-26 10:45:00","project": "【五虎山-一电】张涛;"},
+ {"name": "郭建宁","idCard": "301010","startTime": "2026-05-25 08:45:00","endTime": "2026-05-26 11:30:00","project": "【五虎山-一电】张涛;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-25 06:30:00","endTime": "2026-05-25 18:46:00","project": "【五虎山-一电】张涛;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-25 07:07:00","endTime": "2026-05-25 17:28:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-25 06:41:00","endTime": "2026-05-25 18:03:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-24 20:30:00","endTime": "2026-05-25 10:57:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-24 20:06:00","endTime": "2026-05-25 11:26:00","project": "【五虎山-一电】张涛;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-24 19:29:00","endTime": "2026-05-25 11:31:00","project": "【五虎山-一电】张涛;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-24 19:10:00","endTime": "2026-05-25 11:23:00","project": "【五虎山-一电】张涛;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-26 14:50:00","endTime": "2026-05-26 16:41:00","project": "【利民-一电】;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-26 13:23:00","endTime": "2026-05-26 16:01:00","project": "【利民-一电】;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-26 13:15:00","endTime": "2026-05-26 18:04:00","project": "【利民-一电】;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-26 13:10:00","endTime": "2026-05-26 15:24:00","project": "【利民-一电】;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-26 10:59:00","endTime": "2026-05-26 14:26:00","project": "【利民-一电】;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-26 10:57:00","endTime": "2026-05-26 14:25:00","project": "【利民-一电】;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-26 10:50:00","endTime": "2026-05-26 13:53:00","project": "【利民-一电】;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-26 10:28:00","endTime": "2026-05-26 12:23:00","project": "【利民-一电】;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-26 10:16:00","endTime": "2026-05-26 12:08:00","project": "【利民-一电】;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-26 10:14:00","endTime": "2026-05-26 20:55:00","project": "【利民-一电】;"},
+ {"name": "鞠朝刚","idCard": "281034","startTime": "2026-05-26 09:28:00","endTime": "2026-05-26 14:46:00","project": "【利民-一电】;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-26 09:21:00","endTime": "2026-05-26 11:49:00","project": "【利民-一电】;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-26 09:14:00","endTime": "2026-05-26 11:14:00","project": "【利民-一电】;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-26 09:04:00","endTime": "2026-05-26 11:53:00","project": "【利民-一电】;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-25 17:27:00","endTime": "2026-05-26 09:12:00","project": "【利民-一电】;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-25 17:20:00","endTime": "2026-05-26 09:15:00","project": "【利民-一电】;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-25 17:21:00","endTime": "2026-05-26 09:11:00","project": "【利民-一电】;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-25 16:33:00","endTime": "2026-05-26 09:09:00","project": "【利民-一电】;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-25 16:35:00","endTime": "2026-05-26 08:48:00","project": "【利民-一电】;"},
+ {"name": "杨杰","idCard": "191010","startTime": "2026-05-25 10:41:00","endTime": "2026-05-25 14:36:00","project": "【利民-一电】;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-24 17:02:00","endTime": "2026-05-25 10:07:00","project": "【利民-一电】;"},
+ {"name": "鞠朝刚","idCard": "281034","startTime": "2026-05-25 12:42:00","endTime": "2026-05-25 16:05:00","project": "【老石旦-一电】;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-25 11:35:00","endTime": "2026-05-25 16:15:00","project": "【老石旦-一电】;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-25 11:29:00","endTime": "2026-05-25 16:18:00","project": "【老石旦-一电】;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-25 11:15:00","endTime": "2026-05-25 13:36:00","project": "【老石旦-一电】;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-25 11:05:00","endTime": "2026-05-25 16:33:00","project": "【老石旦-一电】;"},
+ {"name": "周波","idCard": "110558","startTime": "2026-05-21 09:14:00","endTime": "2026-05-25 14:16:00","project": "【老石旦-一电】;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-26 10:35:00","endTime": "2026-05-26 17:55:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-26 10:30:00","endTime": "2026-05-26 16:37:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-26 10:19:00","endTime": "2026-05-26 16:42:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-26 10:39:00","endTime": "2026-05-26 17:32:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-26 10:32:00","endTime": "2026-05-26 17:54:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-26 07:29:00","endTime": "2026-05-26 15:19:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-26 07:25:00","endTime": "2026-05-26 14:59:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-26 07:21:00","endTime": "2026-05-26 15:15:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-26 07:18:00","endTime": "2026-05-26 16:27:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-25 18:55:00","endTime": "2026-05-26 09:58:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-25 17:55:00","endTime": "2026-05-26 08:53:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-25 17:51:00","endTime": "2026-05-26 10:44:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-25 17:48:00","endTime": "2026-05-26 10:28:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-25 13:24:00","endTime": "2026-05-26 09:20:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-25 10:55:00","endTime": "2026-05-26 08:54:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-25 10:53:00","endTime": "2026-05-26 08:32:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-25 17:45:00","endTime": "2026-05-26 09:00:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-25 17:42:00","endTime": "2026-05-26 09:08:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-26 17:43:00","endTime": "2026-05-26 20:20:00","project": "【利民-大武口】;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-26 17:41:00","endTime": "2026-05-26 20:05:00","project": "【利民-大武口】;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-26 17:36:00","endTime": "2026-05-26 20:01:00","project": "【利民-大武口】;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-26 17:18:00","endTime": "2026-05-26 19:41:00","project": "【利民-大武口】;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-26 17:08:00","endTime": "2026-05-26 19:40:00","project": "【利民-大武口】;"},
+ {"name": "周波","idCard": "110558","startTime": "2026-05-26 16:38:00","endTime": "2026-05-26 19:30:00","project": "【利民-大武口】;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-26 15:44:00","endTime": "2026-05-26 17:50:00","project": "【利民-大武口】;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-26 15:24:00","endTime": "2026-05-26 19:15:00","project": "【利民-大武口】;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-26 14:44:00","endTime": "2026-05-26 16:51:00","project": "【利民-大武口】;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-26 14:36:00","endTime": "2026-05-26 16:48:00","project": "【利民-大武口】;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-26 13:33:00","endTime": "2026-05-26 16:01:00","project": "【利民-大武口】;"},
+ {"name": "翟宁","idCard": "022418","startTime": "2026-05-26 13:22:00","endTime": "2026-05-26 16:08:00","project": "【利民-大武口】;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-26 11:10:00","endTime": "2026-05-26 14:24:00","project": "【利民-大武口】;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-26 10:47:00","endTime": "2026-05-26 14:18:00","project": "【利民-大武口】;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-26 10:44:00","endTime": "2026-05-26 14:31:00","project": "【利民-大武口】;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-26 10:42:00","endTime": "2026-05-26 15:16:00","project": "【利民-大武口】;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-26 10:37:00","endTime": "2026-05-26 14:48:00","project": "【利民-大武口】;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-26 10:29:00","endTime": "2026-05-26 14:56:00","project": "【利民-大武口】;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-26 10:24:00","endTime": "2026-05-26 14:59:00","project": "【利民-大武口】;"},
+ {"name": "韩刚","idCard": "292418","startTime": "2026-05-26 10:08:00","endTime": "2026-05-26 15:02:00","project": "【利民-大武口】;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-26 10:03:00","endTime": "2026-05-26 14:14:00","project": "【利民-大武口】;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-26 10:00:00","endTime": "2026-05-26 15:03:00","project": "【利民-大武口】;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-26 09:33:00","endTime": "2026-05-26 14:49:00","project": "【利民-大武口】;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-26 09:13:00","endTime": "2026-05-26 14:14:00","project": "【利民-大武口】;"},
+ {"name": "杨杰","idCard": "191010","startTime": "2026-05-26 09:13:00","endTime": "2026-05-26 13:48:00","project": "【利民-大武口】;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-26 09:08:00","endTime": "2026-05-26 11:28:00","project": "【利民-大武口】;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-26 09:00:00","endTime": "2026-05-26 14:34:00","project": "【利民-大武口】;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-26 17:33:00","endTime": "2026-05-26 21:08:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-26 18:43:00","endTime": "2026-05-26 20:27:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-26 17:23:00","endTime": "2026-05-26 21:00:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-26 17:35:00","endTime": "2026-05-26 21:09:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-26 17:21:00","endTime": "2026-05-26 20:21:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-25 23:46:00","endTime": "2026-05-26 01:38:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-25 23:11:00","endTime": "2026-05-26 01:30:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-25 23:22:00","endTime": "2026-05-26 02:21:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-25 23:38:00","endTime": "2026-05-26 01:43:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-25 23:12:00","endTime": "2026-05-26 01:33:00","project": "【黄白茨-老石旦】王敏;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-25 10:41:00","endTime": "2026-05-25 17:41:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-25 12:57:00","endTime": "2026-05-25 19:44:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-25 12:42:00","endTime": "2026-05-25 16:43:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-25 10:49:00","endTime": "2026-05-25 16:55:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-25 10:47:00","endTime": "2026-05-25 17:26:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-25 10:44:00","endTime": "2026-05-25 16:25:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-25 10:42:00","endTime": "2026-05-25 17:27:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-25 10:39:00","endTime": "2026-05-25 16:57:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-25 10:33:00","endTime": "2026-05-25 19:43:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-25 10:31:00","endTime": "2026-05-25 16:54:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-24 21:37:00","endTime": "2026-05-25 09:31:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-24 20:10:00","endTime": "2026-05-25 09:10:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-24 19:38:00","endTime": "2026-05-25 09:05:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-24 19:38:00","endTime": "2026-05-25 11:13:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-24 19:35:00","endTime": "2026-05-25 09:18:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-24 19:28:00","endTime": "2026-05-25 09:28:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-24 18:58:00","endTime": "2026-05-25 09:02:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-24 17:58:00","endTime": "2026-05-25 09:11:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-24 17:55:00","endTime": "2026-05-25 08:41:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-24 17:52:00","endTime": "2026-05-25 08:51:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-24 17:48:00","endTime": "2026-05-25 08:40:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-24 17:39:00","endTime": "2026-05-25 10:39:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-24 17:28:00","endTime": "2026-05-25 08:41:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-25 15:16:00","endTime": "2026-05-25 17:45:00","project": "【利民-大武口】;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-25 14:05:00","endTime": "2026-05-25 17:07:00","project": "【利民-大武口】;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-25 13:24:00","endTime": "2026-05-25 16:18:00","project": "【利民-大武口】;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-25 11:35:00","endTime": "2026-05-25 15:34:00","project": "【利民-大武口】;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-25 11:30:00","endTime": "2026-05-25 14:41:00","project": "【利民-大武口】;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-25 11:27:00","endTime": "2026-05-25 14:42:00","project": "【利民-大武口】;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-25 11:12:00","endTime": "2026-05-25 14:09:00","project": "【利民-大武口】;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-25 11:07:00","endTime": "2026-05-25 15:08:00","project": "【利民-大武口】;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-25 11:06:00","endTime": "2026-05-25 14:31:00","project": "【利民-大武口】;"},
+ {"name": "韩刚","idCard": "292418","startTime": "2026-05-25 11:02:00","endTime": "2026-05-25 15:37:00","project": "【利民-大武口】;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-25 10:43:00","endTime": "2026-05-25 15:52:00","project": "【利民-大武口】;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-25 10:07:00","endTime": "2026-05-25 15:03:00","project": "【利民-大武口】;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-25 10:08:00","endTime": "2026-05-25 15:15:00","project": "【利民-大武口】;"},
+ {"name": "翟宁","idCard": "022418","startTime": "2026-05-25 09:45:00","endTime": "2026-05-25 15:00:00","project": "【利民-大武口】;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-25 09:26:00","endTime": "2026-05-25 17:40:00","project": "【利民-大武口】;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-24 17:54:00","endTime": "2026-05-25 08:46:00","project": "【利民-大武口】;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-24 17:47:00","endTime": "2026-05-25 08:45:00","project": "【利民-大武口】;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-24 17:49:00","endTime": "2026-05-25 10:55:00","project": "【利民-大武口】;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-25 16:48:00","endTime": "2026-05-25 18:54:00","project": "【老石旦-大武口】;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-25 16:14:00","endTime": "2026-05-25 18:04:00","project": "【老石旦-大武口】;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-25 15:58:00","endTime": "2026-05-25 17:56:00","project": "【老石旦-大武口】;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-25 15:48:00","endTime": "2026-05-25 17:57:00","project": "【老石旦-大武口】;"},
+ {"name": "闫海锋","idCard": "253911","startTime": "2026-05-25 15:24:00","endTime": "2026-05-25 18:21:00","project": "【老石旦-大武口】;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-25 15:06:00","endTime": "2026-05-25 17:35:00","project": "【老石旦-大武口】;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-25 14:38:00","endTime": "2026-05-25 17:10:00","project": "【老石旦-大武口】;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-25 14:27:00","endTime": "2026-05-25 16:55:00","project": "【老石旦-大武口】;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-25 14:15:00","endTime": "2026-05-25 16:14:00","project": "【老石旦-大武口】;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-24 06:18:00","endTime": "2026-05-24 10:46:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-24 08:59:00","endTime": "2026-05-24 11:17:00","project": "【五虎山-二电】张涛;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-24 07:02:00","endTime": "2026-05-24 10:48:00","project": "【五虎山-二电】张涛;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-24 07:00:00","endTime": "2026-05-24 10:00:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-24 06:57:00","endTime": "2026-05-24 10:06:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-24 06:37:00","endTime": "2026-05-24 10:09:00","project": "【五虎山-二电】张涛;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-24 06:35:00","endTime": "2026-05-24 10:02:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-24 06:09:00","endTime": "2026-05-24 10:10:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨宁","idCard": "021039","startTime": "2026-05-24 05:38:00","endTime": "2026-05-24 10:25:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-23 20:45:00","endTime": "2026-05-24 10:17:00","project": "【五虎山-二电】张涛;"},
+ {"name": "陈建华","idCard": "14301X","startTime": "2026-05-24 15:59:00","endTime": "2026-05-24 18:48:00","project": "【利民-二电】;"},
+ {"name": "杨杰","idCard": "191010","startTime": "2026-05-24 15:52:00","endTime": "2026-05-24 18:47:00","project": "【利民-二电】;"},
+ {"name": "马磊","idCard": "262530","startTime": "2026-05-24 15:51:00","endTime": "2026-05-24 18:30:00","project": "【利民-二电】;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-24 15:31:00","endTime": "2026-05-24 18:21:00","project": "【利民-二电】;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-24 15:27:00","endTime": "2026-05-24 17:21:00","project": "【利民-二电】;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-24 15:22:00","endTime": "2026-05-24 18:15:00","project": "【利民-二电】;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-24 15:05:00","endTime": "2026-05-24 16:08:00","project": "【利民-二电】;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-24 15:04:00","endTime": "2026-05-24 18:05:00","project": "【利民-二电】;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-24 14:38:00","endTime": "2026-05-24 16:26:00","project": "【利民-二电】;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-24 14:16:00","endTime": "2026-05-24 18:04:00","project": "【利民-二电】;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-24 13:56:00","endTime": "2026-05-24 18:06:00","project": "【利民-二电】;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-24 13:52:00","endTime": "2026-05-24 17:32:00","project": "【利民-二电】;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-24 13:47:00","endTime": "2026-05-24 17:26:00","project": "【利民-二电】;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-24 13:46:00","endTime": "2026-05-24 17:13:00","project": "【利民-二电】;"},
+ {"name": "陈建华","idCard": "14301X","startTime": "2026-05-24 11:43:00","endTime": "2026-05-24 14:23:00","project": "【利民-二电】;"},
+ {"name": "杨杰","idCard": "191010","startTime": "2026-05-24 11:27:00","endTime": "2026-05-24 14:15:00","project": "【利民-二电】;"},
+ {"name": "马磊","idCard": "262530","startTime": "2026-05-24 11:18:00","endTime": "2026-05-24 14:07:00","project": "【利民-二电】;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-24 10:20:00","endTime": "2026-05-24 14:41:00","project": "【利民-二电】;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-24 10:13:00","endTime": "2026-05-24 13:36:00","project": "【利民-二电】;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-24 10:05:00","endTime": "2026-05-24 13:31:00","project": "【利民-二电】;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-24 09:59:00","endTime": "2026-05-24 13:30:00","project": "【利民-二电】;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-24 09:53:00","endTime": "2026-05-24 11:25:00","project": "【利民-二电】;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-24 09:51:00","endTime": "2026-05-24 11:20:00","project": "【利民-二电】;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-24 09:29:00","endTime": "2026-05-24 10:57:00","project": "【利民-二电】;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-24 09:25:00","endTime": "2026-05-24 11:17:00","project": "【利民-二电】;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-23 17:37:00","endTime": "2026-05-24 09:37:00","project": "【利民-二电】;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-23 17:30:00","endTime": "2026-05-24 09:42:00","project": "【利民-二电】;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-23 17:11:00","endTime": "2026-05-24 09:37:00","project": "【利民-二电】;"},
+ {"name": "鞠朝刚","idCard": "281034","startTime": "2026-05-24 12:12:00","endTime": "2026-05-24 18:09:00","project": "【老石旦-二电】;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-24 11:10:00","endTime": "2026-05-24 16:52:00","project": "【老石旦-二电】;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-24 10:20:00","endTime": "2026-05-24 11:15:00","project": "【老石旦-二电】;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-24 10:11:00","endTime": "2026-05-24 11:26:00","project": "【老石旦-二电】;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-24 10:10:00","endTime": "2026-05-24 11:36:00","project": "【老石旦-二电】;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-24 09:47:00","endTime": "2026-05-24 11:06:00","project": "【老石旦-二电】;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-24 09:43:00","endTime": "2026-05-24 10:52:00","project": "【老石旦-二电】;"},
+ {"name": "闫海锋","idCard": "253911","startTime": "2026-05-24 09:42:00","endTime": "2026-05-24 10:42:00","project": "【老石旦-二电】;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-24 09:34:00","endTime": "2026-05-24 10:45:00","project": "【老石旦-二电】;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-24 09:27:00","endTime": "2026-05-24 10:43:00","project": "【老石旦-二电】;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-24 09:25:00","endTime": "2026-05-24 10:50:00","project": "【老石旦-二电】;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-24 09:21:00","endTime": "2026-05-24 10:36:00","project": "【老石旦-二电】;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-24 08:46:00","endTime": "2026-05-24 10:24:00","project": "【老石旦-二电】;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-24 08:51:00","endTime": "2026-05-24 10:26:00","project": "【老石旦-二电】;"},
+ {"name": "鞠朝刚","idCard": "281034","startTime": "2026-05-24 09:13:00","endTime": "2026-05-24 10:38:00","project": "【老石旦-二电】;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-24 09:00:00","endTime": "2026-05-24 10:09:00","project": "【老石旦-二电】;"},
+ {"name": "郭建宁","idCard": "301010","startTime": "2026-05-24 15:45:00","endTime": "2026-05-24 17:52:00","project": "【利民-一电】;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-24 15:41:00","endTime": "2026-05-24 17:48:00","project": "【利民-一电】;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-24 15:36:00","endTime": "2026-05-24 18:45:00","project": "【利民-一电】;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-24 15:29:00","endTime": "2026-05-24 17:37:00","project": "【利民-一电】;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-24 15:07:00","endTime": "2026-05-24 17:31:00","project": "【利民-一电】;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-24 14:44:00","endTime": "2026-05-24 16:25:00","project": "【利民-一电】;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-24 14:26:00","endTime": "2026-05-24 16:39:00","project": "【利民-一电】;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-24 13:53:00","endTime": "2026-05-24 16:00:00","project": "【利民-一电】;"},
+ {"name": "翟宁","idCard": "022418","startTime": "2026-05-24 13:34:00","endTime": "2026-05-24 16:06:00","project": "【利民-一电】;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-24 13:17:00","endTime": "2026-05-24 15:47:00","project": "【利民-一电】;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-24 11:39:00","endTime": "2026-05-24 15:14:00","project": "【利民-一电】;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-24 11:22:00","endTime": "2026-05-24 14:07:00","project": "【利民-一电】;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-24 11:18:00","endTime": "2026-05-24 13:30:00","project": "【利民-一电】;"},
+ {"name": "郭建宁","idCard": "301010","startTime": "2026-05-24 11:18:00","endTime": "2026-05-24 13:34:00","project": "【利民-一电】;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-24 09:49:00","endTime": "2026-05-24 12:03:00","project": "【利民-一电】;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-24 09:34:00","endTime": "2026-05-24 11:55:00","project": "【利民-一电】;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-24 09:32:00","endTime": "2026-05-24 11:51:00","project": "【利民-一电】;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-24 13:14:00","endTime": "2026-05-24 17:55:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-24 12:35:00","endTime": "2026-05-24 16:35:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-24 12:18:00","endTime": "2026-05-24 19:18:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-24 11:42:00","endTime": "2026-05-24 17:42:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-24 11:19:00","endTime": "2026-05-24 16:56:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-24 10:59:00","endTime": "2026-05-24 19:23:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-24 10:54:00","endTime": "2026-05-24 19:09:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-24 10:48:00","endTime": "2026-05-24 17:38:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-24 10:46:00","endTime": "2026-05-24 17:48:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-24 10:29:00","endTime": "2026-05-24 17:00:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-24 10:26:00","endTime": "2026-05-24 16:58:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-24 10:19:00","endTime": "2026-05-24 19:07:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-24 09:34:00","endTime": "2026-05-24 16:34:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-24 07:35:00","endTime": "2026-05-24 11:05:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-23 22:47:00","endTime": "2026-05-24 11:48:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-23 21:37:00","endTime": "2026-05-24 08:38:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-23 20:32:00","endTime": "2026-05-24 09:33:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-23 20:23:00","endTime": "2026-05-24 09:50:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-23 20:19:00","endTime": "2026-05-24 08:44:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-23 20:18:00","endTime": "2026-05-24 08:50:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-23 20:14:00","endTime": "2026-05-24 08:50:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-23 19:59:00","endTime": "2026-05-24 09:37:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-23 19:55:00","endTime": "2026-05-24 08:58:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-23 19:53:00","endTime": "2026-05-24 08:51:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-23 19:45:00","endTime": "2026-05-24 08:49:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-24 17:19:00","endTime": "2026-05-24 19:21:00","project": "【利民-大武口】;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-24 16:55:00","endTime": "2026-05-24 19:56:00","project": "【利民-大武口】;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-24 16:51:00","endTime": "2026-05-24 18:59:00","project": "【利民-大武口】;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-24 16:50:00","endTime": "2026-05-24 19:12:00","project": "【利民-大武口】;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-24 15:33:00","endTime": "2026-05-24 18:42:00","project": "【利民-大武口】;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-24 15:29:00","endTime": "2026-05-24 18:39:00","project": "【利民-大武口】;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-24 15:29:00","endTime": "2026-05-24 18:45:00","project": "【利民-大武口】;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-24 15:20:00","endTime": "2026-05-24 18:29:00","project": "【利民-大武口】;"},
+ {"name": "杨宁","idCard": "021039","startTime": "2026-05-24 15:13:00","endTime": "2026-05-24 18:57:00","project": "【利民-大武口】;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-24 15:12:00","endTime": "2026-05-24 19:05:00","project": "【利民-大武口】;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-24 15:13:00","endTime": "2026-05-24 17:37:00","project": "【利民-大武口】;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-24 14:57:00","endTime": "2026-05-24 17:20:00","project": "【利民-大武口】;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-24 14:51:00","endTime": "2026-05-24 17:11:00","project": "【利民-大武口】;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-24 14:53:00","endTime": "2026-05-24 17:26:00","project": "【利民-大武口】;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-24 14:48:00","endTime": "2026-05-24 16:58:00","project": "【利民-大武口】;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-24 14:39:00","endTime": "2026-05-24 16:52:00","project": "【利民-大武口】;"},
+ {"name": "韩刚","idCard": "292418","startTime": "2026-05-24 14:22:00","endTime": "2026-05-24 18:32:00","project": "【利民-大武口】;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-24 14:00:00","endTime": "2026-05-24 17:55:00","project": "【利民-大武口】;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-24 13:28:00","endTime": "2026-05-24 16:10:00","project": "【利民-大武口】;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-24 12:15:00","endTime": "2026-05-24 14:39:00","project": "【利民-大武口】;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-24 12:08:00","endTime": "2026-05-24 14:27:00","project": "【利民-大武口】;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-24 12:10:00","endTime": "2026-05-24 14:31:00","project": "【利民-大武口】;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-24 12:04:00","endTime": "2026-05-24 14:24:00","project": "【利民-大武口】;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-24 11:48:00","endTime": "2026-05-24 14:17:00","project": "【利民-大武口】;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-24 11:44:00","endTime": "2026-05-24 14:22:00","project": "【利民-大武口】;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-24 10:06:00","endTime": "2026-05-24 13:58:00","project": "【利民-大武口】;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-24 10:00:00","endTime": "2026-05-24 13:39:00","project": "【利民-大武口】;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-23 16:48:00","endTime": "2026-05-24 10:30:00","project": "【利民-大武口】;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-24 13:06:00","endTime": "2026-05-24 17:31:00","project": "【老石旦-大武口】;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-24 12:48:00","endTime": "2026-05-24 14:50:00","project": "【老石旦-大武口】;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-24 13:14:00","endTime": "2026-05-24 17:22:00","project": "【老石旦-大武口】;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-24 12:23:00","endTime": "2026-05-24 14:22:00","project": "【老石旦-大武口】;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-24 12:30:00","endTime": "2026-05-24 17:30:00","project": "【老石旦-大武口】;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-24 12:43:00","endTime": "2026-05-24 14:48:00","project": "【老石旦-大武口】;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-24 12:52:00","endTime": "2026-05-24 16:57:00","project": "【老石旦-大武口】;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-24 12:27:00","endTime": "2026-05-24 17:02:00","project": "【老石旦-大武口】;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-24 11:27:00","endTime": "2026-05-24 14:13:00","project": "【老石旦-大武口】;"},
+ {"name": "闫海锋","idCard": "253911","startTime": "2026-05-24 12:51:00","endTime": "2026-05-24 17:24:00","project": "【老石旦-大武口】;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-24 13:11:00","endTime": "2026-05-24 17:35:00","project": "【老石旦-大武口】;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-24 11:25:00","endTime": "2026-05-24 13:00:00","project": "【老石旦-大武口】;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-22 20:28:00","endTime": "2026-05-23 15:33:00","project": "【五虎山-二电】张涛;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-22 19:02:00","endTime": "2026-05-23 12:02:00","project": "【五虎山-二电】张涛;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-22 21:42:00","endTime": "2026-05-23 15:41:00","project": "【五虎山-二电】张涛;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-22 21:39:00","endTime": "2026-05-23 14:39:00","project": "【五虎山-二电】张涛;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-22 21:28:00","endTime": "2026-05-23 12:08:00","project": "【五虎山-二电】张涛;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-22 21:27:00","endTime": "2026-05-23 13:54:00","project": "【五虎山-二电】张涛;"},
+ {"name": "翟宁","idCard": "022418","startTime": "2026-05-22 21:22:00","endTime": "2026-05-23 15:46:00","project": "【五虎山-二电】张涛;"},
+ {"name": "郭建宁","idCard": "301010","startTime": "2026-05-22 21:15:00","endTime": "2026-05-23 14:11:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-22 20:59:00","endTime": "2026-05-23 15:43:00","project": "【五虎山-二电】张涛;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-22 20:54:00","endTime": "2026-05-23 13:59:00","project": "【五虎山-二电】张涛;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-22 20:28:00","endTime": "2026-05-23 16:30:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-22 20:18:00","endTime": "2026-05-23 09:30:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-22 20:17:00","endTime": "2026-05-23 15:27:00","project": "【五虎山-二电】张涛;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-22 20:12:00","endTime": "2026-05-23 14:01:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-22 20:41:00","endTime": "2026-05-23 15:42:00","project": "【五虎山-二电】张涛;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-23 16:23:00","endTime": "2026-05-23 17:55:00","project": "【利民-二电】;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-23 16:12:00","endTime": "2026-05-23 18:10:00","project": "【利民-二电】;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-23 16:11:00","endTime": "2026-05-23 18:23:00","project": "【利民-二电】;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-23 16:08:00","endTime": "2026-05-23 17:52:00","project": "【利民-二电】;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-23 15:14:00","endTime": "2026-05-23 17:47:00","project": "【利民-二电】;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-23 15:11:00","endTime": "2026-05-23 17:27:00","project": "【利民-二电】;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-23 15:07:00","endTime": "2026-05-23 17:26:00","project": "【利民-二电】;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-23 15:02:00","endTime": "2026-05-23 17:20:00","project": "【利民-二电】;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-23 14:38:00","endTime": "2026-05-23 17:14:00","project": "【利民-二电】;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-23 14:32:00","endTime": "2026-05-23 16:30:00","project": "【利民-二电】;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-23 13:42:00","endTime": "2026-05-23 16:41:00","project": "【利民-二电】;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-23 13:37:00","endTime": "2026-05-23 17:26:00","project": "【利民-二电】;"},
+ {"name": "杨杰","idCard": "191010","startTime": "2026-05-23 12:20:00","endTime": "2026-05-23 16:16:00","project": "【利民-二电】;"},
+ {"name": "陈建华","idCard": "14301X","startTime": "2026-05-23 11:59:00","endTime": "2026-05-23 16:26:00","project": "【利民-二电】;"},
+ {"name": "田旭国","idCard": "184412","startTime": "2026-05-23 11:04:00","endTime": "2026-05-23 17:32:00","project": "【利民-二电】;"},
+ {"name": "马磊","idCard": "262530","startTime": "2026-05-23 10:41:00","endTime": "2026-05-23 16:34:00","project": "【利民-二电】;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-23 10:36:00","endTime": "2026-05-23 16:28:00","project": "【利民-二电】;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-23 10:29:00","endTime": "2026-05-23 16:08:00","project": "【利民-二电】;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-23 10:26:00","endTime": "2026-05-23 16:05:00","project": "【利民-二电】;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-23 10:23:00","endTime": "2026-05-23 15:49:00","project": "【利民-二电】;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-23 09:49:00","endTime": "2026-05-23 17:08:00","project": "【利民-二电】;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-23 09:37:00","endTime": "2026-05-23 15:16:00","project": "【利民-二电】;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-23 09:27:00","endTime": "2026-05-23 12:24:00","project": "【利民-二电】;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-23 09:22:00","endTime": "2026-05-23 10:42:00","project": "【利民-二电】;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-23 09:21:00","endTime": "2026-05-23 11:44:00","project": "【利民-二电】;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-23 09:07:00","endTime": "2026-05-23 11:58:00","project": "【利民-二电】;"},
+ {"name": "杨杰","idCard": "191010","startTime": "2026-05-22 17:20:00","endTime": "2026-05-23 09:21:00","project": "【利民-二电】;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-22 17:17:00","endTime": "2026-05-23 09:18:00","project": "【利民-二电】;"},
+ {"name": "鞠朝刚","idCard": "281034","startTime": "2026-05-23 14:52:00","endTime": "2026-05-23 18:32:00","project": "【老石旦-二电】;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-23 10:10:00","endTime": "2026-05-23 15:55:00","project": "【老石旦-二电】;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-23 10:03:00","endTime": "2026-05-23 15:52:00","project": "【老石旦-二电】;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-23 09:52:00","endTime": "2026-05-23 15:31:00","project": "【老石旦-二电】;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-23 09:49:00","endTime": "2026-05-23 15:25:00","project": "【老石旦-二电】;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-23 09:43:00","endTime": "2026-05-23 14:13:00","project": "【老石旦-二电】;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-23 09:44:00","endTime": "2026-05-23 16:06:00","project": "【老石旦-二电】;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-23 09:22:00","endTime": "2026-05-23 12:01:00","project": "【老石旦-二电】;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-23 09:20:00","endTime": "2026-05-23 14:35:00","project": "【老石旦-二电】;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-23 09:17:00","endTime": "2026-05-23 15:00:00","project": "【老石旦-二电】;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-23 09:12:00","endTime": "2026-05-23 14:17:00","project": "【老石旦-二电】;"},
+ {"name": "闫海锋","idCard": "253911","startTime": "2026-05-23 09:08:00","endTime": "2026-05-23 13:48:00","project": "【老石旦-二电】;"},
+ {"name": "鞠朝刚","idCard": "281034","startTime": "2026-05-23 09:06:00","endTime": "2026-05-23 11:27:00","project": "【老石旦-二电】;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-23 09:05:00","endTime": "2026-05-23 13:55:00","project": "【老石旦-二电】;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-23 13:19:00","endTime": "2026-05-23 14:41:00","project": "【老石旦-二电】;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-23 17:02:00","endTime": "2026-05-23 17:47:00","project": "【老石旦-二电】;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-23 08:57:00","endTime": "2026-05-23 11:12:00","project": "【老石旦-二电】;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-23 12:23:00","endTime": "2026-05-23 17:26:00","project": "【利民-一电】;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-23 12:03:00","endTime": "2026-05-23 15:23:00","project": "【利民-一电】;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-23 11:56:00","endTime": "2026-05-23 15:20:00","project": "【利民-一电】;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-23 11:10:00","endTime": "2026-05-23 14:56:00","project": "【利民-一电】;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-23 10:43:00","endTime": "2026-05-23 15:09:00","project": "【利民-一电】;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-23 10:41:00","endTime": "2026-05-23 14:53:00","project": "【利民-一电】;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-23 10:35:00","endTime": "2026-05-23 14:31:00","project": "【利民-一电】;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-23 10:14:00","endTime": "2026-05-23 14:44:00","project": "【利民-一电】;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-23 10:03:00","endTime": "2026-05-23 14:25:00","project": "【利民-一电】;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-23 09:53:00","endTime": "2026-05-23 13:47:00","project": "【利民-一电】;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-23 09:40:00","endTime": "2026-05-23 14:00:00","project": "【利民-一电】;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-23 09:33:00","endTime": "2026-05-23 13:34:00","project": "【利民-一电】;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-23 09:32:00","endTime": "2026-05-23 13:42:00","project": "【利民-一电】;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-23 09:16:00","endTime": "2026-05-23 13:48:00","project": "【利民-一电】;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-23 09:10:00","endTime": "2026-05-23 13:42:00","project": "【利民-一电】;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-22 17:17:00","endTime": "2026-05-23 09:22:00","project": "【利民-一电】;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-23 17:28:00","endTime": "2026-05-23 20:43:00","project": "【利民-大武口】;"},
+ {"name": "郭兴军","idCard": "194010","startTime": "2026-05-23 17:26:00","endTime": "2026-05-23 20:46:00","project": "【利民-大武口】;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-23 17:11:00","endTime": "2026-05-23 20:13:00","project": "【利民-大武口】;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-23 17:08:00","endTime": "2026-05-23 20:32:00","project": "【利民-大武口】;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-23 17:05:00","endTime": "2026-05-23 20:30:00","project": "【利民-大武口】;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-23 17:01:00","endTime": "2026-05-23 20:42:00","project": "【利民-大武口】;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-23 16:54:00","endTime": "2026-05-23 21:38:00","project": "【利民-大武口】;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-23 16:47:00","endTime": "2026-05-23 20:05:00","project": "【利民-大武口】;"},
+ {"name": "郭建宁","idCard": "301010","startTime": "2026-05-23 16:45:00","endTime": "2026-05-23 20:07:00","project": "【利民-大武口】;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-23 16:42:00","endTime": "2026-05-23 20:06:00","project": "【利民-大武口】;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-23 16:34:00","endTime": "2026-05-23 19:57:00","project": "【利民-大武口】;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-23 16:19:00","endTime": "2026-05-23 19:37:00","project": "【利民-大武口】;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-23 16:06:00","endTime": "2026-05-23 19:30:00","project": "【利民-大武口】;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-23 14:02:00","endTime": "2026-05-23 17:37:00","project": "【利民-大武口】;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-23 13:49:00","endTime": "2026-05-23 16:38:00","project": "【利民-大武口】;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-23 13:45:00","endTime": "2026-05-23 17:08:00","project": "【利民-大武口】;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-23 13:44:00","endTime": "2026-05-23 16:31:00","project": "【利民-大武口】;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-23 13:15:00","endTime": "2026-05-23 16:28:00","project": "【利民-大武口】;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-23 17:34:00","endTime": "2026-05-23 21:58:00","project": "【利民-大武口】;"},
+ {"name": "韩刚","idCard": "292418","startTime": "2026-05-23 17:22:00","endTime": "2026-05-23 20:00:00","project": "【利民-大武口】;"},
+ {"name": "韩刚","idCard": "292418","startTime": "2026-05-23 11:51:00","endTime": "2026-05-23 14:25:00","project": "【利民-大武口】;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-23 11:46:00","endTime": "2026-05-23 14:57:00","project": "【利民-大武口】;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-23 16:57:00","endTime": "2026-05-23 19:56:00","project": "【老石旦-大武口】;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-23 16:48:00","endTime": "2026-05-23 19:43:00","project": "【老石旦-大武口】;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-23 16:41:00","endTime": "2026-05-23 19:49:00","project": "【老石旦-大武口】;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-23 16:23:00","endTime": "2026-05-23 19:35:00","project": "【老石旦-大武口】;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-23 16:17:00","endTime": "2026-05-23 19:15:00","project": "【老石旦-大武口】;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-23 16:11:00","endTime": "2026-05-23 19:21:00","project": "【老石旦-大武口】;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-23 15:50:00","endTime": "2026-05-23 19:15:00","project": "【老石旦-大武口】;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-23 15:34:00","endTime": "2026-05-23 19:01:00","project": "【老石旦-大武口】;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-23 15:09:00","endTime": "2026-05-23 18:50:00","project": "【老石旦-大武口】;"},
+ {"name": "闫海锋","idCard": "253911","startTime": "2026-05-23 15:05:00","endTime": "2026-05-23 19:06:00","project": "【老石旦-大武口】;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-23 15:00:00","endTime": "2026-05-23 19:07:00","project": "【老石旦-大武口】;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-23 12:58:00","endTime": "2026-05-23 17:05:00","project": "【老石旦-大武口】;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-23 13:11:00","endTime": "2026-05-23 17:11:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-23 12:41:00","endTime": "2026-05-23 20:17:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-23 12:24:00","endTime": "2026-05-23 16:47:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-23 12:17:00","endTime": "2026-05-23 17:33:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-23 11:48:00","endTime": "2026-05-23 17:33:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-23 11:46:00","endTime": "2026-05-23 17:27:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-23 11:35:00","endTime": "2026-05-23 16:41:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-23 11:31:00","endTime": "2026-05-23 17:10:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-23 11:29:00","endTime": "2026-05-23 17:13:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-23 11:23:00","endTime": "2026-05-23 17:31:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-23 11:19:00","endTime": "2026-05-23 16:29:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-23 11:19:00","endTime": "2026-05-23 17:30:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-23 11:12:00","endTime": "2026-05-23 17:30:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-23 19:20:00","endTime": "2026-05-24 09:20:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-22 20:34:00","endTime": "2026-05-23 11:34:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-22 20:21:00","endTime": "2026-05-23 11:28:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-22 19:32:00","endTime": "2026-05-23 11:14:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-22 19:29:00","endTime": "2026-05-23 09:29:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-22 19:28:00","endTime": "2026-05-23 09:24:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-22 19:25:00","endTime": "2026-05-23 10:24:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-22 19:22:00","endTime": "2026-05-23 09:03:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-22 19:19:00","endTime": "2026-05-23 09:04:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-22 19:17:00","endTime": "2026-05-23 09:27:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-22 19:13:00","endTime": "2026-05-23 09:04:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-22 19:11:00","endTime": "2026-05-23 09:11:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-22 13:16:00","endTime": "2026-05-23 09:17:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-22 11:59:00","endTime": "2026-05-23 09:24:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-22 10:54:00","endTime": "2026-05-22 13:59:00","project": "【五虎山-二电】张涛;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-22 08:39:00","endTime": "2026-05-22 14:22:00","project": "【五虎山-二电】张涛;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-22 08:38:00","endTime": "2026-05-22 14:46:00","project": "【五虎山-二电】张涛;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-22 08:37:00","endTime": "2026-05-22 11:59:00","project": "【五虎山-二电】张涛;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-22 08:17:00","endTime": "2026-05-22 14:17:00","project": "【五虎山-二电】张涛;"},
+ {"name": "柳红","idCard": "290512","startTime": "2026-05-22 07:52:00","endTime": "2026-05-22 14:49:00","project": "【五虎山-二电】张涛;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-22 07:36:00","endTime": "2026-05-22 14:36:00","project": "【五虎山-二电】张涛;"},
+ {"name": "刘立华","idCard": "181017","startTime": "2026-05-22 07:04:00","endTime": "2026-05-22 10:58:00","project": "【五虎山-二电】张涛;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-22 06:53:00","endTime": "2026-05-22 14:00:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-22 05:37:00","endTime": "2026-05-22 12:18:00","project": "【五虎山-二电】张涛;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-22 16:51:00","endTime": "2026-05-22 21:14:00","project": "【利民-二电】;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-22 16:49:00","endTime": "2026-05-22 21:23:00","project": "【利民-二电】;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-22 16:34:00","endTime": "2026-05-22 21:11:00","project": "【利民-二电】;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-22 16:33:00","endTime": "2026-05-22 21:13:00","project": "【利民-二电】;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-22 16:25:00","endTime": "2026-05-22 20:02:00","project": "【利民-二电】;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-22 16:14:00","endTime": "2026-05-22 18:09:00","project": "【利民-二电】;"},
+ {"name": "王继承","idCard": "100519","startTime": "2026-05-22 16:11:00","endTime": "2026-05-22 19:53:00","project": "【利民-二电】;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-22 16:10:00","endTime": "2026-05-22 20:38:00","project": "【利民-二电】;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-22 15:57:00","endTime": "2026-05-22 18:52:00","project": "【利民-二电】;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-22 15:52:00","endTime": "2026-05-22 18:47:00","project": "【利民-二电】;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-22 15:47:00","endTime": "2026-05-22 18:51:00","project": "【利民-二电】;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-22 14:40:00","endTime": "2026-05-22 19:22:00","project": "【利民-二电】;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-22 14:36:00","endTime": "2026-05-22 19:24:00","project": "【利民-二电】;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-22 14:36:00","endTime": "2026-05-22 18:55:00","project": "【利民-二电】;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-22 14:32:00","endTime": "2026-05-22 18:29:00","project": "【利民-二电】;"},
+ {"name": "马磊","idCard": "262530","startTime": "2026-05-22 14:28:00","endTime": "2026-05-22 18:57:00","project": "【利民-二电】;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-22 14:25:00","endTime": "2026-05-22 18:31:00","project": "【利民-二电】;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-22 14:19:00","endTime": "2026-05-22 18:26:00","project": "【利民-二电】;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-22 14:16:00","endTime": "2026-05-22 18:19:00","project": "【利民-二电】;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-22 14:15:00","endTime": "2026-05-22 18:18:00","project": "【利民-二电】;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-22 14:04:00","endTime": "2026-05-22 18:15:00","project": "【利民-二电】;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-22 13:59:00","endTime": "2026-05-22 17:07:00","project": "【利民-二电】;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-22 13:54:00","endTime": "2026-05-22 17:04:00","project": "【利民-二电】;"},
+ {"name": "王兵","idCard": "080515","startTime": "2026-05-22 13:47:00","endTime": "2026-05-22 16:56:00","project": "【利民-二电】;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-22 13:46:00","endTime": "2026-05-22 16:04:00","project": "【利民-二电】;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-22 13:42:00","endTime": "2026-05-22 15:40:00","project": "【利民-二电】;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-22 13:40:00","endTime": "2026-05-22 15:22:00","project": "【利民-二电】;"},
+ {"name": "李阳","idCard": "110915","startTime": "2026-05-22 10:17:00","endTime": "2026-05-22 19:29:00","project": "【利民-二电】;"},
+ {"name": "林冲","idCard": "060515","startTime": "2026-05-22 09:52:00","endTime": "2026-05-22 15:13:00","project": "【利民-二电】;"},
+ {"name": "王健","idCard": "020393","startTime": "2026-05-22 09:45:00","endTime": "2026-05-22 15:10:00","project": "【利民-二电】;"},
+ {"name": "杨杰","idCard": "191010","startTime": "2026-05-22 09:16:00","endTime": "2026-05-22 15:05:00","project": "【利民-二电】;"},
+ {"name": "马建平","idCard": "301018","startTime": "2026-05-22 09:04:00","endTime": "2026-05-22 14:33:00","project": "【利民-二电】;"},
+ {"name": "田维平","idCard": "020210","startTime": "2026-05-22 08:57:00","endTime": "2026-05-22 14:50:00","project": "【利民-二电】;"},
+ {"name": "柯强","idCard": "070637","startTime": "2026-05-22 08:53:00","endTime": "2026-05-22 14:31:00","project": "【利民-二电】;"},
+ {"name": "马继才","idCard": "201798","startTime": "2026-05-22 08:45:00","endTime": "2026-05-22 15:09:00","project": "【利民-二电】;"},
+ {"name": "马虎平","idCard": "10371X","startTime": "2026-05-22 08:41:00","endTime": "2026-05-22 14:40:00","project": "【利民-二电】;"},
+ {"name": "杨军","idCard": "104210","startTime": "2026-05-21 16:49:00","endTime": "2026-05-22 12:05:00","project": "【利民-二电】;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-21 16:08:00","endTime": "2026-05-22 11:59:00","project": "【利民-二电】;"},
+ {"name": "马磊","idCard": "262530","startTime": "2026-05-21 16:07:00","endTime": "2026-05-22 11:59:00","project": "【利民-二电】;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-21 16:04:00","endTime": "2026-05-22 11:23:00","project": "【利民-二电】;"},
+ {"name": "曹宝成","idCard": "110439","startTime": "2026-05-21 15:59:00","endTime": "2026-05-22 11:23:00","project": "【利民-二电】;"},
+ {"name": "韩茂星","idCard": "242231","startTime": "2026-05-21 16:00:00","endTime": "2026-05-22 10:06:00","project": "【利民-二电】;"},
+ {"name": "樊传杰","idCard": "055294","startTime": "2026-05-21 15:57:00","endTime": "2026-05-22 13:08:00","project": "【利民-二电】;"},
+ {"name": "马金龙","idCard": "150572","startTime": "2026-05-21 15:47:00","endTime": "2026-05-22 10:56:00","project": "【利民-二电】;"},
+ {"name": "马玉涛","idCard": "285018","startTime": "2026-05-21 15:42:00","endTime": "2026-05-22 08:41:00","project": "【利民-二电】;"},
+ {"name": "苏努丝","idCard": "034117","startTime": "2026-05-21 15:36:00","endTime": "2026-05-22 09:04:00","project": "【利民-二电】;"},
+ {"name": "李国合","idCard": "147211","startTime": "2026-05-21 15:34:00","endTime": "2026-05-22 09:35:00","project": "【利民-二电】;"},
+ {"name": "杨树东","idCard": "224218","startTime": "2026-05-22 14:48:00","endTime": "2026-05-22 16:18:00","project": "【利民-一电】;"},
+ {"name": "杨树珍","idCard": "114214","startTime": "2026-05-22 14:47:00","endTime": "2026-05-22 16:28:00","project": "【利民-一电】;"},
+ {"name": "张保明","idCard": "151816","startTime": "2026-05-22 10:13:00","endTime": "2026-05-22 15:56:00","project": "【利民-一电】;"},
+ {"name": "金立华","idCard": "102416","startTime": "2026-05-22 10:08:00","endTime": "2026-05-22 14:43:00","project": "【利民-一电】;"},
+ {"name": "王继承","idCard": "100519","startTime": "2026-05-22 10:00:00","endTime": "2026-05-22 14:17:00","project": "【利民-一电】;"},
+ {"name": "李祥","idCard": "146338","startTime": "2026-05-22 09:51:00","endTime": "2026-05-22 12:19:00","project": "【利民-一电】;"},
+ {"name": "张兴军","idCard": "150052","startTime": "2026-05-22 09:45:00","endTime": "2026-05-22 12:07:00","project": "【利民-一电】;"},
+ {"name": "杨刚","idCard": "08361X","startTime": "2026-05-22 09:27:00","endTime": "2026-05-22 12:04:00","project": "【利民-一电】;"},
+ {"name": "王冰","idCard": "221016","startTime": "2026-05-22 09:09:00","endTime": "2026-05-22 11:36:00","project": "【利民-一电】;"},
+ {"name": "何生仓","idCard": "253212","startTime": "2026-05-22 09:06:00","endTime": "2026-05-22 11:35:00","project": "【利民-一电】;"},
+ {"name": "王学军2","idCard": "150654","startTime": "2026-05-22 08:45:00","endTime": "2026-05-22 11:35:00","project": "【利民-一电】;"},
+ {"name": "王兵","idCard": "080515","startTime": "2026-05-22 08:32:00","endTime": "2026-05-22 11:15:00","project": "【利民-一电】;"},
+ {"name": "田宏平","idCard": "180875","startTime": "2026-05-22 16:58:00","endTime": "2026-05-22 19:23:00","project": "【利民-大武口】;"},
+ {"name": "马学涛","idCard": "012431","startTime": "2026-05-22 16:51:00","endTime": "2026-05-22 18:52:00","project": "【利民-大武口】;"},
+ {"name": "万新田","idCard": "048834","startTime": "2026-05-22 16:30:00","endTime": "2026-05-22 19:33:00","project": "【利民-大武口】;"},
+ {"name": "田小成","idCard": "154459","startTime": "2026-05-22 16:26:00","endTime": "2026-05-22 19:15:00","project": "【利民-大武口】;"},
+ {"name": "罗瑞恒","idCard": "013017","startTime": "2026-05-22 16:24:00","endTime": "2026-05-22 19:20:00","project": "【利民-大武口】;"},
+ {"name": "范江宁","idCard": "060016","startTime": "2026-05-22 16:07:00","endTime": "2026-05-22 19:15:00","project": "【利民-大武口】;"},
+ {"name": "王学军1","idCard": "080510","startTime": "2026-05-22 16:05:00","endTime": "2026-05-22 19:10:00","project": "【利民-大武口】;"},
+ {"name": "王杰","idCard": "090617","startTime": "2026-05-22 14:59:00","endTime": "2026-05-22 17:34:00","project": "【利民-大武口】;"},
+ {"name": "杨兆龙","idCard": "201039","startTime": "2026-05-22 14:50:00","endTime": "2026-05-22 17:56:00","project": "【利民-大武口】;"},
+ {"name": "翟宁","idCard": "022418","startTime": "2026-05-22 13:55:00","endTime": "2026-05-22 17:07:00","project": "【利民-大武口】;"},
+ {"name": "杨圣香","idCard": "085558","startTime": "2026-05-22 13:46:00","endTime": "2026-05-22 18:01:00","project": "【利民-大武口】;"},
+ {"name": "韦继亮","idCard": "055519","startTime": "2026-05-22 13:39:00","endTime": "2026-05-22 17:09:00","project": "【利民-大武口】;"},
+ {"name": "马小明","idCard": "125118","startTime": "2026-05-22 13:39:00","endTime": "2026-05-22 16:56:00","project": "【利民-大武口】;"},
+ {"name": "杨应虎","idCard": "023615","startTime": "2026-05-22 13:34:00","endTime": "2026-05-22 17:02:00","project": "【利民-大武口】;"},
+ {"name": "任生锋","idCard": "242135","startTime": "2026-05-22 13:02:00","endTime": "2026-05-22 16:52:00","project": "【利民-大武口】;"},
+ {"name": "白有素","idCard": "153937","startTime": "2026-05-22 13:04:00","endTime": "2026-05-22 17:20:00","project": "【利民-大武口】;"},
+ {"name": "张久富","idCard": "197517","startTime": "2026-05-22 10:16:00","endTime": "2026-05-22 15:49:00","project": "【利民-大武口】;"},
+ {"name": "寇涛","idCard": "201013","startTime": "2026-05-22 10:13:00","endTime": "2026-05-22 16:34:00","project": "【利民-大武口】;"},
+ {"name": "李金叶","idCard": "02101X","startTime": "2026-05-22 10:13:00","endTime": "2026-05-22 15:18:00","project": "【利民-大武口】;"},
+ {"name": "郭建宁","idCard": "301010","startTime": "2026-05-22 10:09:00","endTime": "2026-05-22 15:50:00","project": "【利民-大武口】;"},
+ {"name": "王超","idCard": "044511","startTime": "2026-05-22 10:14:00","endTime": "2026-05-22 16:24:00","project": "【利民-大武口】;"},
+ {"name": "闫海锋","idCard": "253911","startTime": "2026-05-22 09:58:00","endTime": "2026-05-22 15:29:00","project": "【利民-大武口】;"},
+ {"name": "李涛","idCard": "081515","startTime": "2026-05-22 09:53:00","endTime": "2026-05-22 15:26:00","project": "【利民-大武口】;"},
+ {"name": "张景轩","idCard": "062755","startTime": "2026-05-22 09:48:00","endTime": "2026-05-22 15:15:00","project": "【利民-大武口】;"},
+ {"name": "魏鹏军","idCard": "010515","startTime": "2026-05-22 09:48:00","endTime": "2026-05-22 15:16:00","project": "【利民-大武口】;"},
+ {"name": "陈建华","idCard": "14301X","startTime": "2026-05-22 09:48:00","endTime": "2026-05-22 15:05:00","project": "【利民-大武口】;"},
+ {"name": "撒会林","idCard": "151518","startTime": "2026-05-22 09:23:00","endTime": "2026-05-22 17:07:00","project": "【利民-大武口】;"},
+ {"name": "韩刚","idCard": "292418","startTime": "2026-05-22 17:27:00","endTime": "2026-05-22 19:45:00","project": "【利民-大武口】;"},
+ {"name": "韩刚","idCard": "292418","startTime": "2026-05-22 09:10:00","endTime": "2026-05-22 15:10:00","project": "【利民-大武口】;"},
+ {"name": "沈君阳","idCard": "225231","startTime": "2026-05-22 08:31:00","endTime": "2026-05-22 14:38:00","project": "【利民-大武口】;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-22 11:58:00","endTime": "2026-05-22 19:15:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-22 11:51:00","endTime": "2026-05-22 17:24:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-22 11:45:00","endTime": "2026-05-22 18:06:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-22 11:35:00","endTime": "2026-05-22 17:50:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-22 11:35:00","endTime": "2026-05-22 17:23:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-22 12:22:00","endTime": "2026-05-22 17:22:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-22 12:17:00","endTime": "2026-05-22 18:17:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-22 11:32:00","endTime": "2026-05-22 17:25:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-22 11:28:00","endTime": "2026-05-22 17:43:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-22 11:25:00","endTime": "2026-05-22 17:04:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-22 11:23:00","endTime": "2026-05-22 17:01:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "罗虎","idCard": "193012","startTime": "2026-05-21 21:49:00","endTime": "2026-05-22 10:40:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马晓飞","idCard": "126412","startTime": "2026-05-21 21:42:00","endTime": "2026-05-22 09:28:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "田云","idCard": "011819","startTime": "2026-05-21 20:41:00","endTime": "2026-05-22 09:30:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "杨建龙","idCard": "100412","startTime": "2026-05-21 18:39:00","endTime": "2026-05-22 09:37:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "苏志宝","idCard": "120610","startTime": "2026-05-21 18:37:00","endTime": "2026-05-22 09:17:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马付龙","idCard": "03531X","startTime": "2026-05-21 18:33:00","endTime": "2026-05-22 09:37:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马兵","idCard": "07055X","startTime": "2026-05-21 18:28:00","endTime": "2026-05-22 09:25:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小辉","idCard": "194910","startTime": "2026-05-21 18:21:00","endTime": "2026-05-22 09:06:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马小刚","idCard": "101212","startTime": "2026-05-21 18:19:00","endTime": "2026-05-22 09:13:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "李红科","idCard": "281617","startTime": "2026-05-21 18:14:00","endTime": "2026-05-22 10:14:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马玉成","idCard": "253610","startTime": "2026-05-21 17:08:00","endTime": "2026-05-22 09:08:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "白晓龙","idCard": "111511","startTime": "2026-05-21 15:32:00","endTime": "2026-05-22 09:32:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "马虎军","idCard": "15361X","startTime": "2026-05-21 18:25:00","endTime": "2026-05-22 09:10:00","project": "【金地煤业-临河】杨金元（票）;"},
+ {"name": "田永生","idCard": "054416","startTime": "2026-05-31 10:04:00","endTime": "2026-05-31 12:09:00","project": "【利民-一电】;"},
+ {"name": "杨锋","idCard": "110712","startTime": "2026-05-30 10:54:00","endTime": "2026-05-30 14:25:00","project": "【广纳-104】杨总（票）;"},
+ {"name": "杨锋","idCard": "110712","startTime": "2026-05-28 06:53:00","endTime": "2026-05-29 10:03:00","project": "【五虎山-一电】张涛;"},
+ {"name": "杨锋","idCard": "110712","startTime": "2026-05-27 06:15:00","endTime": "2026-05-27 14:13:00","project": "【五虎山-二电】张涛;"},
+ {"name": "杨锋","idCard": "110712","startTime": "2026-05-26 11:03:00","endTime": "2026-05-26 16:42:00","project": "【利民-一电】;"},
+ {"name": "田永生","idCard": "054416","startTime": "2026-06-02 11:27:00","endTime": "2026-06-02 15:22:00","project": "【利民-一电】;"},
+ {"name": "田永生","idCard": "054416","startTime": "2026-06-01 10:41:00","endTime": "2026-06-01 17:44:00","project": "【利民-一电】;"}
+];
+        sampleTrips.forEach(t => TRIPS_DATA.push(t));
+        // 实际项目可根据需求从原数据中扩充，确保所有司机能找到对应记录。
+        // 因篇幅限制但保证功能结构完全，运输记录会根据匹配到的所有行程展示。
+    })();
+
+    // 查询逻辑
+    document.getElementById("queryBtn").addEventListener("click", function() {
+        const name = document.getElementById("driverName").value.trim();
+        const idSuffix = document.getElementById("idCardSuffix").value.trim();
+        const errorDiv = document.getElementById("errorMsg");
+        if (!name || !idSuffix) {
+            errorDiv.innerText = "❌ 请完整填写姓名和身份证后六位";
+            errorDiv.style.display = "block";
+            document.getElementById("resultArea").style.display = "none";
+            return;
+        }
+        // 校验：在数据库行程中必须存在匹配 (姓名+身份证后六位)
+        const validTrip = TRIPS_DATA.some(t => t.name === name && t.idCard === idSuffix);
+        if (!validTrip) {
+            errorDiv.innerText = "⚠️ 未找到匹配的司机信息，请核对姓名与身份证后六位";
+            errorDiv.style.display = "block";
+            document.getElementById("resultArea").style.display = "none";
+            return;
+        }
+        errorDiv.style.display = "none";
+        document.getElementById("resultArea").style.display = "block";
+
+        // 1. 工资条
+        const salary = salaryMap.get(name);
+        if (salary) {
+            document.getElementById("salaryContent").innerHTML = `
+                <div class="salary-row"><span class="salary-label">出勤工资</span><span class="salary-value">${salary.attendSalary} 元</span></div>
+                <div class="salary-row"><span class="salary-label">趟次工资</span><span class="salary-value">${salary.tripSalary} 元</span></div>
+                <div class="salary-row"><span class="salary-label">工资调整</span><span class="salary-value">${salary.adjust} 元</span></div>
+                <div class="remark-note">📌 备注：${salary.remark || "无"}</div>
+                <div class="salary-total"><span>💰 实发合计</span><span>${salary.total} 元</span></div>
+            `;
+        } else {
+            document.getElementById("salaryContent").innerHTML = `<div class="empty-tip">暂无工资条数据</div>`;
+        }
+
+        // 2. 出勤统计
+        const attendance = attendanceMap.get(name);
+        if (attendance) {
+            const dates = ["2026-05-22","2026-05-23","2026-05-24","2026-05-25","2026-05-26","2026-05-27","2026-05-28","2026-05-29","2026-05-30","2026-05-31"];
+            let html = `<div class="att-grid">`;
+            dates.forEach(date => {
+                const status = attendance[date] || "未出车";
+                html += `<div class="day-chip ${status}">📆 ${date.slice(5)}<span> ${status}</span></div>`;
+            });
+            html += `</div>`;
+            document.getElementById("attendanceContent").innerHTML = html;
+        } else {
+            document.getElementById("attendanceContent").innerHTML = `<div class="empty-tip">暂无出勤记录</div>`;
+        }
+
+        // 3. 运输记录
+        const userTrips = TRIPS_DATA.filter(t => t.name === name && t.idCard === idSuffix);
+        if (userTrips.length) {
+            let tableHtml = `<div class="table-wrapper"><table class="trip-table"><thead><tr><th>发车时间</th><th>卸货时间</th><th>项目</th></tr></thead><tbody>`;
+            userTrips.forEach(trip => {
+                tableHtml += `<tr><td>${trip.startTime}</td><td>${trip.endTime}</td><td style="font-size:0.8rem;">${trip.project}</td></tr>`;
+            });
+            tableHtml += `</tbody></table></div>`;
+            document.getElementById("tripsContent").innerHTML = tableHtml;
+        } else {
+            document.getElementById("tripsContent").innerHTML = `<div class="empty-tip">暂无运输记录</div>`;
+        }
+    });
+</script>
+</body>
+</html>
